@@ -1,0 +1,19 @@
+:root {
+  /* COLORS */
+
+  --bg-color: #EFF3F6;
+  --color-white: #FFF;
+  --color-light-1: #EFF2FB;
+  --color-light-2: #E4EBF3;
+  --color-dark-1: #59636b;
+  --color-dark-2: #6E808E;
+  --color-dark-3: #B5C0C6;
+  --color-accent: #93c5fd;
+
+
+  /* SHADOWS */
+  --shadow-inner-1: inset -1px -1px 2px 0 rgba(250, 251, 255, 1), inset 1px 1px 2px 0 rgba(22, 27, 29, 0.23);
+  --shadow-outer-1: -1px -1px 2px 0 rgba(250, 251, 255, 1), 1px 1px 2px 0 rgba(22, 27, 29, 0.23);
+  --shadow-outer-2: -5px -5px 20px 0 rgba(250, 251, 255, 1), 5px 5px 20px 0 rgba(22, 27, 29, 0.23);
+  --shadow-outer-3: -5px -5px 40px 0 rgba(250, 251, 255, 1), 5px 5px 40px 0 rgba(22, 27, 29, 0.23);
+}

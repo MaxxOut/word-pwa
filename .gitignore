@@ -1,0 +1,6 @@
+node_modules/
+dist/
+.idea/
+*.lnk
+*.log
+.DS_Store

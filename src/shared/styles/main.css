@@ -1,0 +1,45 @@
+@import "./common/variables.css";
+
+@import "./element-plus/buttons.css";
+@import "./element-plus/input.css";
+
+html {
+  font-family: "Montserrat Alternates", sans-serif;
+  font-weight: 400;
+  font-style: normal;
+}
+
+.app-main {
+  background-color: var(--bg-color);
+}
+
+/* общая шапка и подвал этапов тренировки */
+.stage-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.stage-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.stage-title h2 {
+  font-size: 1.375rem;
+}
+
+.stage-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+}
+
+.stage-footer .el-button + .el-button {
+  margin-left: 0;
+}
