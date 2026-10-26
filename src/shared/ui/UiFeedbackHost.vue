@@ -54,7 +54,7 @@ function onClosed() {
   left: 50%;
   bottom: calc(var(--nav-h) + 1rem + env(safe-area-inset-bottom));
   transform: translateX(-50%);
-  z-index: 200;
+  z-index: 10000; /* выше любых шторок (их z растёт с каждым открытием) */
   display: grid;
   gap: 0.5rem;
   width: max-content;

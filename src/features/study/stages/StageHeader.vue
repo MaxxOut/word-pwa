@@ -16,7 +16,7 @@ const { t } = useI18n()
 </script>
 
 <template>
-  <header class="stage-top">
+  <header class="stage-top sticky-top">
     <div class="stage-row">
       <UiIconButton icon="close" :label="t('study.exit')" @click="$emit('exit')" />
       <h2 class="grow">{{ title }}</h2>
@@ -34,8 +34,8 @@ const { t } = useI18n()
   z-index: 20;
   display: grid;
   gap: 0.5rem;
-  padding: 0.5rem 0 0.75rem;
-  margin-bottom: 0.5rem;
+  margin: 0 -1rem 0.5rem;
+  padding: 0.5rem 1rem 0.75rem;
   background: var(--bg);
 }
 

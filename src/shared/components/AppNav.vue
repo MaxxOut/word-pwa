@@ -18,7 +18,7 @@ const ITEMS = [
 </script>
 
 <template>
-  <nav class="nav" :aria-label="t('nav.label')">
+  <nav class="nav sticky-bottom" :aria-label="t('nav.label')">
     <AppLogo class="nav-logo" size="2.5rem" />
     <RouterLink
         v-for="item in ITEMS"

@@ -29,6 +29,7 @@ import warning     from '@material-symbols/svg-400/rounded/warning.svg?raw'
 import info        from '@material-symbols/svg-400/rounded/info.svg?raw'
 import minus       from '@material-symbols/svg-400/rounded/remove.svg?raw'
 import share       from '@material-symbols/svg-400/rounded/ios_share.svg?raw'
+import filter      from '@material-symbols/svg-400/rounded/filter_list.svg?raw'
 import schedule    from '@material-symbols/svg-400/rounded/schedule.svg?raw'
 import south       from '@material-symbols/svg-400/rounded/south.svg?raw'
 import north       from '@material-symbols/svg-400/rounded/north.svg?raw'
@@ -42,7 +43,7 @@ const ICONS = {
   add, edit, delete: del, back, close, speak,
   import: importIcon, export: exportIcon,
   search, check, more, dropdown, hint, backspace, warning, info, minus, share,
-  schedule, south, north,
+  filter, schedule, south, north,
 }
 
 const props = defineProps({

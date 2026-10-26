@@ -64,6 +64,7 @@ export default {
     add:                    'Добавить слово',
     search:                 'Поиск по слову',
     sort:                   'Сортировка',
+    filters:                'Поиск и фильтры',
     countAll:               'Всего слов: {n}',
     sorts: {
       alpha:     'По алфавиту, А → Я',

@@ -4,6 +4,13 @@
 
 const layers = [] // функции закрытия, по порядку открытия
 
+// слой поверх всех открытых: подтверждение из шторки — над шторкой,
+// независимо от того, в каком порядке они оказались в DOM
+let topZ = 100
+export function nextZ() {
+  return ++topZ
+}
+
 window.addEventListener('popstate', () => {
   const depth = history.state?.layer ?? 0
   while (layers.length > depth) layers.pop()()

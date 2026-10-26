@@ -35,6 +35,8 @@ const search  = ref('')
 // фильтр — несколько статусов сразу; ничего не выбрано = все слова
 const statuses = ref(Object.values(STATUS).includes(route.query.status) ? [route.query.status] : [])
 const sort     = ref('new')
+// панель поиска и фильтров свёрнута; пришли с фильтром (с главной) — сразу открыта
+const toolsOpen = ref(statuses.value.length > 0)
 
 const wordDialog   = ref(null)
 const importDialog = ref(null)
@@ -118,60 +120,74 @@ watch(libraryId, () => fetchWords(), { immediate: true })
         :disabled="!library.current?.words_count"
         @click="exportWords"
     />
-  </AppTopBar>
+    <span class="tools-toggle">
+      <UiIconButton
+          icon="filter"
+          :label="t('words.filters')"
+          :variant="toolsOpen ? 'tonal' : 'standard'"
+          :aria-expanded="toolsOpen"
+          aria-controls="word-tools"
+          @click="toolsOpen = !toolsOpen"
+      />
+      <!-- фильтр включён, но панель свёрнута -->
+      <span v-if="hasFilters && !toolsOpen" class="tools-dot" />
+    </span>
 
-  <div class="tools">
-    <UiInput
-        v-model="search"
-        icon="search"
-        :placeholder="t('words.search')"
-        clearable
-        autocomplete="off"
-        autocapitalize="off"
-        spellcheck="false"
-        @update:model-value="onSearch"
-        @clear="fetchWords()"
-    />
-    <div class="filters" role="group" :aria-label="t('words.status')">
-      <button
-          v-for="s in FILTERS"
-          :key="s"
-          v-ripple
-          type="button"
-          class="filter"
-          :class="{ 'filter--on': statuses.includes(s) }"
-          :aria-pressed="statuses.includes(s)"
-          @click="toggleStatus(s)"
-      >
-        <AppIcon v-if="statuses.includes(s)" name="check" size="1.125rem" />
-        {{ t(`status.${s}`) }}
-      </button>
-    </div>
-    <div class="summary">
-      <span class="muted small grow">
-        {{ statuses.length ? t('words.count', { n: total }) : t('words.countAll', { n: total }) }}
-      </span>
-      <div class="sorts" role="radiogroup" :aria-label="t('words.sort')">
-        <button
-            v-for="(o, key) in SORTS"
-            :key="key"
-            v-ripple
-            type="button"
-            role="radio"
-            class="sort"
-            :class="{ 'sort--on': sort === key }"
-            :aria-checked="sort === key"
-            :aria-label="t(`words.sorts.${key}`)"
-            :title="t(`words.sorts.${key}`)"
-            @click="setSort(key)"
-        >
-          <span v-if="o.letter" class="sort-letter">{{ o.letter }}</span>
-          <AppIcon v-else :name="o.icon" size="1.25rem" />
-          <AppIcon :name="o.arrow" size="0.875rem" class="sort-arrow" />
-        </button>
+    <template #below>
+      <div v-show="toolsOpen" id="word-tools" class="tools">
+        <UiInput
+            v-model="search"
+            icon="search"
+            :placeholder="t('words.search')"
+            clearable
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
+            @update:model-value="onSearch"
+            @clear="fetchWords()"
+        />
+        <div class="filters" role="group" :aria-label="t('words.status')">
+          <button
+              v-for="s in FILTERS"
+              :key="s"
+              v-ripple
+              type="button"
+              class="filter"
+              :class="{ 'filter--on': statuses.includes(s) }"
+              :aria-pressed="statuses.includes(s)"
+              @click="toggleStatus(s)"
+          >
+            <AppIcon v-if="statuses.includes(s)" name="check" size="1.125rem" />
+            {{ t(`status.${s}`) }}
+          </button>
+        </div>
+        <div class="summary">
+          <span class="muted small grow">
+            {{ statuses.length ? t('words.count', { n: total }) : t('words.countAll', { n: total }) }}
+          </span>
+          <div class="sorts" role="radiogroup" :aria-label="t('words.sort')">
+            <button
+                v-for="(o, key) in SORTS"
+                :key="key"
+                v-ripple
+                type="button"
+                role="radio"
+                class="sort"
+                :class="{ 'sort--on': sort === key }"
+                :aria-checked="sort === key"
+                :aria-label="t(`words.sorts.${key}`)"
+                :title="t(`words.sorts.${key}`)"
+                @click="setSort(key)"
+            >
+              <span v-if="o.letter" class="sort-letter">{{ o.letter }}</span>
+              <AppIcon v-else :name="o.icon" size="1.25rem" />
+              <AppIcon :name="o.arrow" size="0.875rem" class="sort-arrow" />
+            </button>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
+    </template>
+  </AppTopBar>
 
   <UiSpinner v-if="loading && !words.length" />
 
@@ -223,7 +239,19 @@ watch(libraryId, () => fetchWords(), { immediate: true })
 .tools {
   display: grid;
   gap: 0.75rem;
-  margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
+}
+
+.tools-toggle { position: relative; display: inline-flex; }
+.tools-dot {
+  position: absolute;
+  top: 0.625rem;
+  right: 0.625rem;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--primary);
+  pointer-events: none;
 }
 
 /* фильтры — 2×2, можно выбрать несколько */

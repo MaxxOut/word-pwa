@@ -64,6 +64,7 @@ export default {
     add:                    'Додати слово',
     search:                 'Пошук за словом',
     sort:                   'Сортування',
+    filters:                'Пошук і фільтри',
     countAll:               'Усього слів: {n}',
     sorts: {
       alpha:     'За абеткою, А → Я',

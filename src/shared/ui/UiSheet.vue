@@ -1,7 +1,7 @@
 <script setup>
-import { watch, onBeforeUnmount, useId } from 'vue'
+import { ref, watch, onBeforeUnmount, useId } from 'vue'
 import UiIconButton from './UiIconButton.vue'
-import { pushLayer, popLayer } from './backClose.js'
+import { pushLayer, popLayer, nextZ } from './backClose.js'
 
 // на телефоне — шторка снизу, на широком экране — диалог по центру.
 // dialog — всегда по центру (подтверждения)
@@ -17,6 +17,7 @@ const props = defineProps({
 const emit = defineEmits(['closed'])
 
 const titleId = useId()
+const zIndex  = ref(100)
 
 // закрыли «Назад» — запись истории уже снята
 function closeFromBack() {
@@ -24,6 +25,7 @@ function closeFromBack() {
 }
 
 watch(open, (value, old) => {
+  if (value && !old) zIndex.value = nextZ()
   if (value && !old && props.history) pushLayer(closeFromBack)
   if (!value && old) {
     if (props.history) popLayer(closeFromBack)
@@ -47,6 +49,7 @@ function onKey(e) {
           v-if="open"
           class="overlay"
           :class="{ 'overlay--dialog': dialog }"
+          :style="{ zIndex }"
           @click.self="open = false"
           @keydown="onKey"
       >
