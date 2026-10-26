@@ -1,0 +1,76 @@
+/* Цвета и размеры — Material 3 по макетам.
+   Тема: data-theme="light|dark" на <html>, без атрибута — как в системе.
+   Библиотека: data-lib="en|de" — от неё акцентный цвет всего приложения. */
+
+:root {
+  color-scheme: light;
+
+  --bg:           #EEF1F7;
+  --surface:      #F8F9FD;
+  --container:    #E9EDF5;
+  --container-hi: #DFE4EE;
+  --on:           #191C21;
+  --muted:        #5B606B;
+  --outline:      #C3C8D3;
+  --scrim:        rgb(0 0 0 / 0.4);
+
+  --en: #3352B0; --en-c: #DCE2FF; --on-en-c: #0E2265; --on-en: #FFFFFF;
+  --de: #A24A12; --de-c: #FFDCC7; --on-de-c: #3A1600; --on-de: #FFFFFF;
+
+  --error:     #BA1A1A; --error-c:   #FFDAD6; --on-error-c:   #410002; --on-error: #FFFFFF;
+  --success:   #2E6B30; --success-c: #C8EFC4; --on-success-c: #002106;
+
+  /* акцент — цвет текущей библиотеки */
+  --primary:     var(--en);
+  --on-primary:  var(--on-en);
+  --primary-c:   var(--en-c);
+  --on-primary-c: var(--on-en-c);
+
+  --font-text:  "Roboto Flex Variable", Roboto, system-ui, sans-serif;
+  --font-title: "Montserrat Alternates", var(--font-text);
+
+  --radius-s:  0.75rem;
+  --radius-m:  1rem;
+  --radius-l:  1.5rem;
+  --radius-xl: 1.75rem;
+
+  --gap:      0.5rem;
+  --pad:      1rem;
+  --touch:    3rem;   /* минимальная высота нажимаемого */
+  --nav-h:    5rem;
+  --top-h:    4rem;
+  --content-w: 40rem;
+}
+
+:root[data-lib="de"] {
+  --primary: var(--de); --on-primary: var(--on-de);
+  --primary-c: var(--de-c); --on-primary-c: var(--on-de-c);
+}
+
+/* тёмная: и по системе, и выбранная вручную */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0F1115; --surface: #16191E; --container: #1F232A; --container-hi: #292E36;
+    --on: #E3E5EC; --muted: #A3A8B4; --outline: #424752; --scrim: rgb(0 0 0 / 0.6);
+    --en: #B6C4FF; --en-c: #1F3786; --on-en-c: #DCE2FF; --on-en: #0E2265;
+    --de: #FFB68E; --de-c: #7E3600; --on-de-c: #FFDCC7; --on-de: #3A1600;
+    --error: #FFB4AB; --error-c: #93000A; --on-error-c: #FFDAD6; --on-error: #690005;
+    --success: #9CD49A; --success-c: #13521A; --on-success-c: #C8EFC4;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0F1115; --surface: #16191E; --container: #1F232A; --container-hi: #292E36;
+  --on: #E3E5EC; --muted: #A3A8B4; --outline: #424752; --scrim: rgb(0 0 0 / 0.6);
+  --en: #B6C4FF; --en-c: #1F3786; --on-en-c: #DCE2FF; --on-en: #0E2265;
+  --de: #FFB68E; --de-c: #7E3600; --on-de-c: #FFDCC7; --on-de: #3A1600;
+  --error: #FFB4AB; --error-c: #93000A; --on-error-c: #FFDAD6; --on-error: #690005;
+  --success: #9CD49A; --success-c: #13521A; --on-success-c: #C8EFC4;
+}
+
+/* размер текста — всё в rem, поэтому достаточно корня */
+:root                      { font-size: 16px; }
+:root[data-text-size="s"]  { font-size: 14px; }
+:root[data-text-size="l"]  { font-size: 18px; }
+:root[data-text-size="xl"] { font-size: 20px; }

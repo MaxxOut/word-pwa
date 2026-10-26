@@ -1,10 +1,14 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { ElMessage } from 'element-plus'
 import { words as wordsRepo, DuplicateWordError } from '../../data/index.js'
 import { speak, canSpeak } from '../../shared/utils/browser.js'
-import { icon } from '../../shared/utils/icons.js'
+import { toast, confirm } from '../../shared/ui/feedback.js'
+import UiSheet from '../../shared/ui/UiSheet.vue'
+import UiInput from '../../shared/ui/UiInput.vue'
+import UiButton from '../../shared/ui/UiButton.vue'
+import UiIconButton from '../../shared/ui/UiIconButton.vue'
+import UiSwitch from '../../shared/ui/UiSwitch.vue'
 
 const props = defineProps({
   libraryId: { type: String, default: null },
@@ -15,10 +19,11 @@ const emit = defineEmits(['saved'])
 
 const { t } = useI18n()
 
-const visible = ref(false)
-const saving  = ref(false)
-const editing = ref(null)
-const formRef = ref(null)
+const visible   = ref(false)
+const saving    = ref(false)
+const editing   = ref(null)
+const wordError = ref('')
+const wordInput = ref(null)
 
 const emptyForm = () => ({
   word:          '',
@@ -31,12 +36,9 @@ const emptyForm = () => ({
 
 const form = ref(emptyForm())
 
-const rules = {
-  word: [{ required: true, message: () => t('words.enterWord'), trigger: 'blur' }],
-}
-
 function open(word = null) {
-  editing.value = word
+  editing.value   = word
+  wordError.value = ''
   form.value = word
     ? {
         word:          word.word,
@@ -48,33 +50,50 @@ function open(word = null) {
       }
     : emptyForm()
   visible.value = true
-}
-
-function reset() {
-  form.value    = emptyForm()
-  editing.value = null
-  formRef.value?.clearValidate()
+  // новое слово — сразу клавиатура
+  if (!word) nextTick(() => wordInput.value?.focus())
 }
 
 async function submit() {
-  const valid = await formRef.value?.validate().catch(() => false)
-  if (!valid) return
+  if (!form.value.word.trim()) {
+    wordError.value = t('words.enterWord')
+    return
+  }
+  wordError.value = ''
 
   saving.value = true
   try {
     if (editing.value) {
       await wordsRepo.update(editing.value.id, form.value)
-      ElMessage.success(t('words.updated'))
+      toast.success(t('words.updated'))
     } else {
       await wordsRepo.create(props.libraryId, form.value)
-      ElMessage.success(t('words.created'))
+      toast.success(t('words.created'))
     }
     visible.value = false
     emit('saved')
   } catch (err) {
-    ElMessage.error(err instanceof DuplicateWordError ? t('words.duplicate') : t('errors.save'))
+    if (err instanceof DuplicateWordError) wordError.value = t('words.duplicate')
+    else toast.error(t('errors.save'))
   } finally {
     saving.value = false
+  }
+}
+
+async function remove() {
+  const ok = await confirm({
+    message:     t('words.confirmDelete', { word: editing.value.word }),
+    confirmText: t('common.delete'),
+    danger:      true,
+  })
+  if (!ok) return
+  try {
+    await wordsRepo.remove(editing.value.id)
+    toast(t('words.deleted'))
+    visible.value = false
+    emit('saved')
+  } catch {
+    toast.error(t('errors.delete'))
   }
 }
 
@@ -82,80 +101,114 @@ defineExpose({ open })
 </script>
 
 <template>
-  <el-dialog
-      v-model="visible"
-      :title="editing ? t('words.editTitle') : t('words.addTitle')"
-      width="min(560px, 95vw)"
-      @closed="reset"
-  >
-    <el-form
-        ref="formRef"
-        :model="form"
-        :rules="rules"
-        label-position="top"
-        @submit.prevent="submit"
-    >
-      <el-form-item :label="t('words.word')" prop="word">
-        <el-input v-model="form.word" placeholder="apple" />
-      </el-form-item>
+  <UiSheet v-model="visible" :title="editing ? t('words.editTitle') : t('words.addTitle')">
+    <form class="form" @submit.prevent="submit">
+      <div class="row">
+        <UiInput
+            ref="wordInput"
+            v-model="form.word"
+            class="grow"
+            :label="t('words.word')"
+            :error="wordError"
+            placeholder="apple"
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
+        />
+        <UiIconButton
+            v-if="canSpeak()"
+            class="speak"
+            icon="speak"
+            :label="t('words.speak')"
+            :disabled="!form.word.trim()"
+            @click="speak(form.word, langCode)"
+        />
+      </div>
 
-      <el-form-item :label="t('words.transcription')">
-        <el-input v-model="form.transcription" placeholder="ˈæp.əl" />
-      </el-form-item>
+      <UiInput
+          v-model="form.transcription"
+          :label="t('words.transcription')"
+          placeholder="ˈæp.əl"
+          autocomplete="off"
+      />
 
-      <el-form-item :label="t('words.translations')">
-        <div class="list">
-          <div v-for="(_, i) in form.translation" :key="i" class="list-row">
-            <el-input v-model="form.translation[i]" :placeholder="t('words.translationPlaceholder')" />
-            <el-button :icon="icon('delete')" @click="form.translation.splice(i, 1)" />
-          </div>
-          <el-button size="small" @click="form.translation.push('')">{{ t('words.addTranslation') }}</el-button>
+      <fieldset class="group">
+        <legend class="field-label">{{ t('words.translations') }}</legend>
+        <div v-for="(_, i) in form.translation" :key="i" class="row">
+          <UiInput
+              v-model="form.translation[i]"
+              class="grow"
+              :placeholder="t('words.translationPlaceholder')"
+              :aria-label="t('words.translation')"
+              autocomplete="off"
+          />
+          <UiIconButton icon="close" :label="t('common.remove')" @click="form.translation.splice(i, 1)" />
         </div>
-      </el-form-item>
+        <UiButton variant="text" icon="add" class="add" @click="form.translation.push('')">
+          {{ t('words.addTranslation') }}
+        </UiButton>
+      </fieldset>
 
-      <el-form-item :label="t('words.examples')">
-        <div class="list">
-          <div v-for="(_, i) in form.examples" :key="i" class="list-row">
-            <el-input v-model="form.examples[i]" placeholder="I eat an apple" />
-            <el-button v-if="canSpeak()" :icon="icon('speak')" @click="speak(form.examples[i], langCode)" />
-            <el-button :icon="icon('delete')" @click="form.examples.splice(i, 1)" />
-          </div>
-          <el-button size="small" @click="form.examples.push('')">{{ t('words.addExample') }}</el-button>
+      <fieldset class="group">
+        <legend class="field-label">{{ t('words.examples') }}</legend>
+        <div v-for="(_, i) in form.examples" :key="i" class="row">
+          <UiInput
+              v-model="form.examples[i]"
+              class="grow"
+              multiline
+              placeholder="I eat an apple"
+              :aria-label="t('words.example')"
+          />
+          <UiIconButton
+              v-if="canSpeak()"
+              icon="speak"
+              :label="t('words.speak')"
+              @click="speak(form.examples[i], langCode)"
+          />
+          <UiIconButton icon="close" :label="t('common.remove')" @click="form.examples.splice(i, 1)" />
         </div>
-      </el-form-item>
+        <UiButton variant="text" icon="add" class="add" @click="form.examples.push('')">
+          {{ t('words.addExample') }}
+        </UiButton>
+      </fieldset>
 
-      <el-form-item v-if="editing" :label="t('words.status')">
-        <el-checkbox v-model="form.is_learned">{{ t('status.learned') }}</el-checkbox>
-        <el-checkbox v-model="form.is_ignored">{{ t('words.ignore') }}</el-checkbox>
-      </el-form-item>
-    </el-form>
+      <div v-if="editing" class="group">
+        <UiSwitch v-model="form.is_learned" :label="t('status.learned')" />
+        <UiSwitch v-model="form.is_ignored" :label="t('words.ignore')" :hint="t('words.ignoreHint')" />
+      </div>
+
+      <!-- Enter в поле отправляет форму -->
+      <button type="submit" hidden />
+    </form>
 
     <template #footer>
-      <el-button @click="visible = false">{{ t('common.cancel') }}</el-button>
-      <el-button type="primary" :loading="saving" @click="submit">
+      <UiButton v-if="editing" variant="text" icon="delete" class="delete" @click="remove">
+        {{ t('common.delete') }}
+      </UiButton>
+      <UiButton variant="filled" :loading="saving" @click="submit">
         {{ editing ? t('common.save') : t('words.create') }}
-      </el-button>
+      </UiButton>
     </template>
-  </el-dialog>
+  </UiSheet>
 </template>
 
 <style scoped>
-.list {
+.form {
+  display: grid;
+  gap: 1rem;
+}
+
+.row { align-items: flex-start; }
+.speak { margin-top: 1.5rem; }
+
+.group {
   display: grid;
   gap: 0.5rem;
-  width: 100%;
+  border: 0;
 }
+.group legend { margin-bottom: 0.375rem; }
 
-.list-row {
-  display: flex;
-  gap: 0.5rem;
-}
+.add { justify-self: start; }
 
-.list-row .el-button + .el-button {
-  margin-left: 0;
-}
-
-.list > .el-button {
-  justify-self: start;
-}
+.delete { color: var(--error); margin-right: auto; }
 </style>

@@ -1,7 +1,12 @@
 <script setup>
-import { ref, computed, nextTick, watch } from 'vue'
+import { ref, computed, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { icon } from '../../../shared/utils/icons.js'
+import AppIcon from '../../../shared/components/AppIcon.vue'
+import UiButton from '../../../shared/ui/UiButton.vue'
+import UiInput from '../../../shared/ui/UiInput.vue'
+import StageHeader from './StageHeader.vue'
+import StageCard from './StageCard.vue'
+import { useStageQueue } from './useStageQueue.js'
 
 const props = defineProps({
   words:    { type: Array,  required: true },
@@ -13,33 +18,23 @@ const emit = defineEmits(['done', 'exit'])
 
 const { t } = useI18n()
 
-const queue        = ref([...props.words])
-const currentIndex = ref(0)
-const errorIds     = ref(new Set())
-const doneCount    = ref(0)
+const { current, isLast, counter, progress, fail, succeed, next: nextWord } =
+  useStageQueue(props.words, errorIds => emit('done', errorIds))
 
 const answer    = ref('')
 const checked   = ref(false)
 const isCorrect = ref(false)
 const inputRef  = ref(null)
 
-const current = computed(() => queue.value[currentIndex.value])
-const isLast  = computed(() => currentIndex.value === queue.value.length - 1)
-
 // показываем перевод — пользователь вводит слово
 const prompt        = computed(() => current.value.translation?.join(', ') || current.value.word)
 const correctAnswer = computed(() => current.value.word)
-
-function fail() {
-  errorIds.value.add(current.value.id)
-  queue.value.push({ ...current.value })
-}
 
 function check() {
   if (!answer.value.trim()) return
   isCorrect.value = answer.value.trim().toLowerCase() === correctAnswer.value.toLowerCase()
   checked.value   = true
-  if (isCorrect.value) doneCount.value++
+  if (isCorrect.value) succeed()
   else fail()
 }
 
@@ -51,12 +46,7 @@ function showHint() {
 }
 
 function next() {
-  if (isLast.value) {
-    emit('done', [...errorIds.value])
-    return
-  }
-  currentIndex.value++
-  resetState()
+  if (nextWord()) resetState()
 }
 
 function onEnter() {
@@ -72,110 +62,73 @@ function resetState() {
 }
 
 nextTick(() => inputRef.value?.focus())
-
-watch(() => props.words, () => {
-  queue.value        = [...props.words]
-  currentIndex.value = 0
-  resetState()
-})
 </script>
 
 <template>
-  <div>
-    <div class="stage-header">
-      <div class="stage-title">
-        <el-button :icon="icon('back')" @click="$emit('exit')" />
-        <h2>{{ title }}</h2>
-      </div>
-      <el-tag>{{ currentIndex + 1 }} / {{ queue.length }}</el-tag>
-    </div>
+  <StageHeader
+      :title="title"
+      :counter="counter"
+      :progress="progress"
+      @exit="$emit('exit')"
+  />
 
-    <el-progress :percentage="Math.round((doneCount / words.length) * 100)" class="progress" />
+  <StageCard :had-errors="current.has_error">
+    <div class="muted small">{{ t('stages.enterWord') }}</div>
+    <div class="prompt">{{ prompt }}</div>
+    <div v-if="current.transcription" class="muted">[{{ current.transcription }}]</div>
+  </StageCard>
 
-    <el-card class="question">
-      <div class="label">{{ t('stages.enterWord') }}</div>
-      <div class="prompt">{{ prompt }}</div>
-      <div v-if="current.transcription" class="label">{{ current.transcription }}</div>
-      <div v-if="current.has_error" class="had-errors">⚠ {{ t('stages.hadErrors') }}</div>
-    </el-card>
+  <UiInput
+      ref="inputRef"
+      v-model="answer"
+      class="answer"
+      :placeholder="t('stages.inputPlaceholder')"
+      :state="checked ? (isCorrect ? 'success' : 'error') : null"
+      :disabled="checked"
+      autocapitalize="off"
+      autocomplete="off"
+      autocorrect="off"
+      spellcheck="false"
+      enterkeyhint="go"
+      @enter="onEnter"
+  />
 
-    <el-input
-        ref="inputRef"
-        v-model="answer"
-        :placeholder="t('stages.inputPlaceholder')"
-        size="large"
-        class="answer"
-        :class="checked && (isCorrect ? 'answer--success' : 'answer--error')"
-        :disabled="checked"
-        autocapitalize="off"
-        autocomplete="off"
-        spellcheck="false"
-        @keyup.enter="onEnter"
-    />
+  <div v-if="checked" class="verdict" :class="isCorrect ? 'verdict--ok' : 'verdict--bad'" role="status">
+    <AppIcon :name="isCorrect ? 'check' : 'close'" />
+    <span v-if="isCorrect">{{ t('stages.correct') }}</span>
+    <span v-else>{{ t('stages.correctAnswer') }} <b>{{ correctAnswer }}</b></span>
+  </div>
 
-    <div v-if="checked" class="verdict">
-      <el-tag v-if="isCorrect" type="success" size="large">✓ {{ t('stages.correct') }}</el-tag>
-      <div v-else>
-        <el-tag type="danger" size="large">✗ {{ t('stages.wrong') }}</el-tag>
-        <div class="correct-answer">
-          {{ t('stages.correctAnswer') }} <strong>{{ correctAnswer }}</strong>
-        </div>
-      </div>
-    </div>
-
-    <div class="stage-footer">
-      <el-button :disabled="checked" @click="showHint">{{ t('stages.hint') }}</el-button>
-      <el-button v-if="!checked" type="primary" :disabled="!answer.trim()" @click="check">
-        {{ t('stages.check') }}
-      </el-button>
-      <el-button v-else type="primary" @click="next">
-        {{ isLast ? t('stages.finish') : t('stages.next') }}
-      </el-button>
-    </div>
+  <div class="stage-footer">
+    <template v-if="!checked">
+      <UiButton variant="outlined" icon="hint" @click="showHint">{{ t('stages.hint') }}</UiButton>
+      <UiButton variant="filled" :disabled="!answer.trim()" @click="check">{{ t('stages.check') }}</UiButton>
+    </template>
+    <UiButton v-else variant="filled" @click="next">
+      {{ isLast ? t('stages.finish') : t('stages.next') }}
+    </UiButton>
   </div>
 </template>
 
 <style scoped>
-.progress { margin-bottom: 1.5rem; }
-
-.question {
-  text-align: center;
-  margin-bottom: 1.5rem;
-}
-
-.label {
-  font-size: 0.875rem;
-  color: var(--el-text-color-secondary);
-  margin-bottom: 0.5rem;
-}
-
 .prompt {
+  font-family: var(--font-title);
   font-size: 1.75rem;
   font-weight: 700;
-  margin-bottom: 0.5rem;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
 }
 
-.had-errors {
-  color: var(--el-color-danger);
-  font-size: 0.8125rem;
-  margin-top: 0.25rem;
-}
-
-.answer {
-  margin-bottom: 1rem;
-  font-size: 1.125rem;
-}
-
-.answer--success :deep(.el-input__wrapper) { box-shadow: 0 0 0 1px var(--el-color-success) inset; }
-.answer--error   :deep(.el-input__wrapper) { box-shadow: 0 0 0 1px var(--el-color-danger) inset; }
+.answer :deep(input) { font-size: 1.25rem; }
 
 .verdict {
-  text-align: center;
-  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-m);
 }
-
-.correct-answer {
-  margin-top: 0.5rem;
-  color: var(--el-text-color-regular);
-}
+.verdict--ok  { background: var(--success-c); color: var(--on-success-c); }
+.verdict--bad { background: var(--error-c);   color: var(--on-error-c); }
 </style>

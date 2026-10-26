@@ -16,8 +16,15 @@ export const DEFAULT_SETTINGS = {
     constructor: true,
     input:       true,
   },
+  // в повторении только переводы, свои переключатели
+  repeat_stages: {
+    direct:  true,
+    reverse: true,
+  },
   current_library_id: 'en',
-  locale: null, // null — по языку телефона
+  locale:    null,     // null — по языку телефона
+  appearance: 'light', // тема: light | dark | system
+  text_size: 'm',      // s | m | l | xl
 }
 
 function isObject(v) {

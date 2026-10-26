@@ -2,10 +2,10 @@ import Dexie from 'dexie'
 
 export const DB_NAME = 'words'
 
-// фиксированные библиотеки — id совпадает с кодом языка
+// фиксированные библиотеки — id совпадает с кодом языка; цвета — в теме (--en, --de)
 export const LIBRARIES = [
-  { id: 'en', lang_code: 'en', short_name: 'EN', color: '#93c5fd' },
-  { id: 'de', lang_code: 'de', short_name: 'DE', color: '#fdba74' },
+  { id: 'en', lang_code: 'en', short_name: 'EN' },
+  { id: 'de', lang_code: 'de', short_name: 'DE' },
 ]
 
 export const db = new Dexie(DB_NAME)

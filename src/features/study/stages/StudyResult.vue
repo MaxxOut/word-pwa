@@ -1,7 +1,10 @@
 <script setup>
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { icon } from '../../../shared/utils/icons.js'
+import AppIcon from '../../../shared/components/AppIcon.vue'
+import UiButton from '../../../shared/ui/UiButton.vue'
+import UiSwitch from '../../../shared/ui/UiSwitch.vue'
+import StageHeader from './StageHeader.vue'
 
 const props = defineProps({
   words:     { type: Array,   required: true },
@@ -19,53 +22,77 @@ const learnedCount = computed(() =>
 </script>
 
 <template>
-  <div>
-    <div class="stage-header">
-      <div class="stage-title">
-        <el-button :icon="icon('back')" @click="$emit('exit')" />
-        <h2>{{ t('result.title') }}</h2>
+  <StageHeader :title="t('result.title')" @exit="$emit('exit')" />
+
+  <section class="summary" :class="{ 'summary--all': learnedCount === words.length }">
+    <div class="num big">{{ learnedCount }} / {{ words.length }}</div>
+    <div>{{ t('result.learnedLabel') }}</div>
+  </section>
+
+  <p class="muted small hint">{{ t('result.hint') }}</p>
+
+  <ul class="list">
+    <li v-for="w in words" :key="w.id" class="item">
+      <div class="grow item-text">
+        <b>{{ w.word }}</b>
+        <span class="muted small">{{ w.translation?.join(', ') || '—' }}</span>
+        <span v-if="w.has_error" class="had-errors">
+          <AppIcon name="warning" size="0.875rem" /> {{ t('result.hadErrors') }}
+        </span>
       </div>
-      <el-button type="primary" :loading="saving" @click="$emit('complete')">
-        {{ t('result.save') }}
-      </el-button>
-    </div>
+      <UiSwitch
+          :model-value="!failedIds.has(w.id)"
+          :aria-label="t('result.learnedSwitch', { word: w.word })"
+          @update:model-value="$emit('toggle', w.id)"
+      />
+    </li>
+  </ul>
 
-    <el-alert
-        :title="t('result.learned', { n: learnedCount, total: words.length })"
-        :type="learnedCount === words.length ? 'success' : 'warning'"
-        show-icon
-        :closable="false"
-        class="summary"
-    />
-
-    <el-table :data="words" border stripe class="table">
-      <el-table-column prop="word" :label="t('words.word')" />
-      <el-table-column :label="t('words.translation')">
-        <template #default="{ row }">
-          {{ row.translation?.join(', ') || '—' }}
-        </template>
-      </el-table-column>
-      <el-table-column :label="t('result.errors')" width="130">
-        <template #default="{ row }">
-          <el-tag v-if="row.has_error" type="danger" size="small">{{ t('result.hadErrors') }}</el-tag>
-          <el-tag v-else type="success" size="small">{{ t('result.clean') }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column :label="t('result.result')" width="220">
-        <template #default="{ row }">
-          <el-switch
-              :model-value="!failedIds.has(row.id)"
-              :active-text="t('status.learned')"
-              :inactive-text="t('result.again')"
-              @change="$emit('toggle', row.id)"
-          />
-        </template>
-      </el-table-column>
-    </el-table>
+  <div class="stage-footer">
+    <UiButton variant="filled" :loading="saving" @click="$emit('complete')">
+      {{ t('result.save') }}
+    </UiButton>
   </div>
 </template>
 
 <style scoped>
-.summary { margin-bottom: 1rem; }
-.table   { width: 100%; }
+.summary {
+  display: grid;
+  justify-items: center;
+  gap: 0.25rem;
+  padding: 1.5rem 1rem;
+  margin-bottom: 0.75rem;
+  border-radius: 0.5rem;
+  background: var(--container-hi);
+  text-align: center;
+}
+.summary--all { background: var(--success-c); color: var(--on-success-c); }
+.big { font-size: 2.5rem; }
+
+.hint { margin-bottom: 0.5rem; }
+
+.list {
+  display: grid;
+  gap: 0.375rem;
+  list-style: none;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-m);
+  background: var(--container);
+}
+
+.item-text { display: grid; min-width: 0; }
+
+.had-errors {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--error);
+  font-size: 0.75rem;
+}
 </style>

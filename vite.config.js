@@ -20,8 +20,8 @@ export default defineConfig({
         scope: './',
         display: 'standalone',
         orientation: 'portrait',
-        theme_color: '#93c5fd',
-        background_color: '#ffffff',
+        theme_color: '#EEF1F7',
+        background_color: '#EEF1F7',
         icons: [
           { src: 'pwa-64x64.png', sizes: '64x64', type: 'image/png' },
           { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },
@@ -32,6 +32,8 @@ export default defineConfig({
       workbox: {
         // woff не нужен — все современные браузеры берут woff2
         globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
+        // редкие наборы символов шрифтов браузер подгрузит сам, если понадобятся
+        globIgnores: ['**/*-{greek,vietnamese,cyrillic-ext,latin-ext,greek-ext}-*.woff2'],
         cleanupOutdatedCaches: true,
       },
     }),

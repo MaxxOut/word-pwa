@@ -1,7 +1,7 @@
 // локальная реализация репозиториев (IndexedDB через Dexie)
 
 import Dexie from 'dexie'
-import { db, DB_NAME } from './db.js'
+import { db, DB_NAME, LIBRARIES } from './db.js'
 import { DuplicateWordError, NotFoundError } from '../errors.js'
 import { uuid } from '../../shared/utils/uuid.js'
 import { nowIso, localDate, lastDays } from '../../domain/dates.js'
@@ -61,8 +61,11 @@ const settings = {
 // ----- библиотеки -----
 
 const libraries = {
+  // в порядке LIBRARIES (английский первым), а не по алфавиту id
   async list() {
-    const libs = await db.libraries.toArray()
+    const order = LIBRARIES.map(l => l.id)
+    const libs  = (await db.libraries.toArray())
+      .sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id))
     return Promise.all(libs.map(async lib => ({
       ...lib,
       words_count: await db.words.where('library_id').equals(lib.id).count(),
@@ -99,13 +102,13 @@ const libraries = {
 const words = {
   async page(libraryId, {
     page = 1, perPage = 20, search = '', isLearned = null, isIgnored = null,
-    status = null, sort = 'created_at', sortDir = 'desc',
+    statuses = [], sort = 'created_at', sortDir = 'desc',
   } = {}) {
     let list = await wordsOf(libraryId)
 
     if (isLearned !== null) list = list.filter(w => w.is_learned === isLearned)
     if (isIgnored !== null) list = list.filter(w => w.is_ignored === isIgnored)
-    if (status)             list = list.filter(w => wordStatus(w) === status)
+    if (statuses.length)    list = list.filter(w => statuses.includes(wordStatus(w)))
     if (search.trim()) {
       const q = normalizeWord(search)
       list = list.filter(w => w.word_lc.includes(q))

@@ -1,8 +1,11 @@
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { shuffle } from '../../../domain/words.js'
-import { icon } from '../../../shared/utils/icons.js'
+import UiButton from '../../../shared/ui/UiButton.vue'
+import StageHeader from './StageHeader.vue'
+import StageCard from './StageCard.vue'
+import { useStageQueue } from './useStageQueue.js'
 
 const props = defineProps({
   words:        { type: Array,  required: true },
@@ -15,17 +18,13 @@ const emit = defineEmits(['done', 'exit'])
 
 const { t } = useI18n()
 
-const queue        = ref([...props.words])
-const currentIndex = ref(0)
-const errorIds     = ref(new Set())
-const doneCount    = ref(0)
+const { current, counter, progress, markError, fail, succeed, next: nextWord } =
+  useStageQueue(props.words, errorIds => emit('done', errorIds))
 
 const assembled       = ref('')
 const completed       = ref(false)
-const flash           = ref(null) // success | error
-const shuffledLetters = ref([])   // { char, used, wrong }
-
-const current = computed(() => queue.value[currentIndex.value])
+const attemptFailed   = ref(false) // ошибка в этой попытке, а не когда-то раньше
+const shuffledLetters = ref([])    // { char, used, wrong }
 
 const ALPHABET = 'abcdefghijklmnopqrstuvwxyz'
 
@@ -40,7 +39,7 @@ function generateLetters(word) {
 function initWord() {
   assembled.value       = ''
   completed.value       = false
-  flash.value           = null
+  attemptFailed.value   = false
   shuffledLetters.value = generateLetters(current.value.word)
 }
 
@@ -55,7 +54,8 @@ function pressLetter(letter) {
     if (assembled.value.length === current.value.word.length) onWordComplete()
   } else {
     letter.wrong = true
-    errorIds.value.add(current.value.id)
+    attemptFailed.value = true
+    markError()
     setTimeout(() => { letter.wrong = false }, 500)
   }
 }
@@ -70,7 +70,8 @@ function backspace() {
 
 function showHint() {
   const nextChar = current.value.word[assembled.value.length]
-  errorIds.value.add(current.value.id)
+  attemptFailed.value = true
+  markError()
 
   const letter = shuffledLetters.value.find(l => !l.used && l.char.toLowerCase() === nextChar.toLowerCase())
   if (letter) letter.used = true
@@ -81,165 +82,111 @@ function showHint() {
 
 function onWordComplete() {
   completed.value = true
-  flash.value     = 'success'
 
-  // если была ошибка — в конец очереди
-  if (errorIds.value.has(current.value.id)) queue.value.push({ ...current.value })
-  else doneCount.value++
+  // ошиблись в этой попытке — слово ещё раз в конце очереди
+  if (attemptFailed.value) fail()
+  else succeed()
 
-  setTimeout(next, 1500)
-}
-
-function next() {
-  if (currentIndex.value >= queue.value.length - 1) {
-    emit('done', [...errorIds.value])
-    return
-  }
-  currentIndex.value++
-  initWord()
+  setTimeout(() => {
+    if (nextWord()) initWord()
+  }, 1200)
 }
 
 initWord()
-
-watch(() => props.words, () => {
-  queue.value        = [...props.words]
-  currentIndex.value = 0
-  initWord()
-})
 </script>
 
 <template>
-  <div>
-    <div class="stage-header">
-      <div class="stage-title">
-        <el-button :icon="icon('back')" @click="$emit('exit')" />
-        <h2>{{ title }}</h2>
-      </div>
-      <el-tag>{{ currentIndex + 1 }} / {{ queue.length }}</el-tag>
-    </div>
+  <StageHeader
+      :title="title"
+      :counter="counter"
+      :progress="progress"
+      @exit="$emit('exit')"
+  />
 
-    <el-progress :percentage="Math.round((doneCount / words.length) * 100)" class="progress" />
-
-    <el-card class="question">
-      <div class="prompt">{{ current.translation?.join(', ') }}</div>
-      <div class="assembled" :class="flash && `assembled--${flash}`">
-        {{ assembled || '...' }}
-      </div>
-      <div v-if="current.has_error" class="had-errors">⚠ {{ t('stages.hadErrors') }}</div>
-    </el-card>
-
+  <StageCard :had-errors="current.has_error">
+    <div class="muted">{{ current.translation?.join(', ') }}</div>
     <!-- места под буквы -->
-    <div class="slots">
-      <div v-for="(_, i) in current.word.split('')" :key="i" class="slot">
-        {{ assembled[i] ?? '' }}
-      </div>
+    <div class="slots" :class="{ 'slots--done': completed }" aria-live="polite">
+      <span v-for="(_, i) in current.word.split('')" :key="i" class="slot">{{ assembled[i] ?? '' }}</span>
     </div>
+  </StageCard>
 
-    <!-- буквы -->
-    <div class="letters">
-      <button
-          v-for="(letter, i) in shuffledLetters"
-          :key="i"
-          type="button"
-          class="letter"
-          :class="{ 'letter--used': letter.used, 'letter--wrong': letter.wrong }"
-          @click="pressLetter(letter)"
-      >
-        {{ letter.char }}
-      </button>
-    </div>
+  <div class="letters">
+    <button
+        v-for="(letter, i) in shuffledLetters"
+        :key="i"
+        v-ripple
+        type="button"
+        class="letter"
+        :class="{ 'letter--used': letter.used, 'letter--wrong': letter.wrong }"
+        :disabled="letter.used || completed"
+        @click="pressLetter(letter)"
+    >
+      <!-- все строчные: заглавная подсказала бы первую букву -->
+      {{ letter.char.toLowerCase() }}
+    </button>
+  </div>
 
-    <div class="stage-footer">
-      <el-button :disabled="!assembled || completed" @click="backspace">
-        ← {{ t('stages.erase') }}
-      </el-button>
-      <el-button :disabled="completed" @click="showHint">
-        {{ t('stages.hint') }}
-      </el-button>
-    </div>
+  <div class="stage-footer">
+    <UiButton variant="outlined" icon="backspace" :disabled="!assembled || completed" @click="backspace">
+      {{ t('stages.erase') }}
+    </UiButton>
+    <UiButton variant="outlined" icon="hint" :disabled="completed" @click="showHint">
+      {{ t('stages.hint') }}
+    </UiButton>
   </div>
 </template>
 
 <style scoped>
-.progress { margin-bottom: 1.5rem; }
-
-.question {
-  text-align: center;
-  margin-bottom: 1.5rem;
-}
-
-.prompt {
-  color: var(--el-text-color-secondary);
-  margin-bottom: 0.5rem;
-}
-
-.assembled {
-  font-size: 2rem;
-  font-weight: 700;
-  letter-spacing: 0.25rem;
-  min-height: 2.75rem;
-  color: var(--el-text-color-primary);
-  transition: color 0.3s;
-}
-
-.assembled--success { color: var(--el-color-success); }
-.assembled--error   { color: var(--el-color-danger); }
-
-.had-errors {
-  color: var(--el-color-danger);
-  font-size: 0.8125rem;
-  margin-top: 0.25rem;
-}
-
-.slots,
-.letters {
+.slots {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   gap: 0.375rem;
-  margin-bottom: 1rem;
 }
+.slot {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2.5rem;
+  border-bottom: 2px solid var(--outline);
+  font-family: var(--font-title);
+  font-size: 1.375rem;
+  font-weight: 700;
+  transition: color 0.2s, border-color 0.2s;
+}
+.slots--done .slot { color: var(--success); border-color: var(--success); }
 
 .letters {
-  gap: 0.5rem;
-  margin-bottom: 1.5rem;
-}
-
-.slot {
-  width: 2rem;
-  height: 2.25rem;
-  border-bottom: 2px solid var(--el-border-color);
-  display: inline-flex;
-  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
   justify-content: center;
-  font-size: 1.125rem;
-  font-weight: 700;
+  gap: 0.5rem;
 }
 
 .letter {
-  width: 2.75rem;
-  height: 2.75rem;
-  border-radius: 6px;
-  border: 1px solid var(--el-border-color);
-  background: var(--el-bg-color);
-  color: var(--el-text-color-primary);
-  font: inherit;
-  font-size: 1.125rem;
+  width: 3rem;
+  height: 3rem;
+  border: 0;
+  border-radius: 0.75rem;
+  background: var(--primary-c);
+  color: var(--on-primary-c);
+  font-family: var(--font-title);
+  font-size: 1.25rem;
   font-weight: 700;
-  cursor: pointer;
   user-select: none;
-  transition: all 0.2s;
+  transition: opacity 0.2s, background-color 0.2s;
 }
-
-.letter--used {
-  opacity: 0.2;
-  cursor: default;
-  background: var(--el-fill-color-light);
-}
-
+.letter--used { opacity: 0.2; }
+.letter:disabled { cursor: default; }
 .letter--wrong {
-  background: var(--el-color-danger-light-9);
-  border-color: var(--el-color-danger);
-  color: var(--el-color-danger);
+  background: var(--error-c);
+  color: var(--on-error-c);
+  animation: shake 0.3s;
+}
+
+@keyframes shake {
+  25% { transform: translateX(-0.25rem); }
+  75% { transform: translateX(0.25rem); }
 }
 </style>

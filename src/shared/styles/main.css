@@ -1,45 +1,105 @@
-@import "./common/variables.css";
+@import "./theme.css";
 
-@import "./element-plus/buttons.css";
-@import "./element-plus/input.css";
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 html {
-  font-family: "Montserrat Alternates", sans-serif;
-  font-weight: 400;
-  font-style: normal;
+  font-family: var(--font-text);
+  line-height: 1.45;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.app-main {
-  background-color: var(--bg-color);
+body {
+  background: var(--bg);
+  color: var(--on);
+  min-height: 100dvh;
+  overscroll-behavior-y: none;
 }
 
-/* общая шапка и подвал этапов тренировки */
-.stage-header {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 1.5rem;
+h1, h2, h3, .title {
+  font-family: var(--font-title);
+  font-weight: 700;
+  line-height: 1.2;
 }
 
-.stage-title {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
+h1 { font-size: 1.625rem; }
+h2 { font-size: 1.375rem; }
+h3 { font-size: 1.0625rem; }
+
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+
+:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+/* цифры одного размера и ширины */
+.num {
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
 }
 
-.stage-title h2 {
-  font-size: 1.375rem;
+.muted { color: var(--muted); }
+
+/* подпись над полем, группой кнопок, списком полей */
+.field-label {
+  padding-left: 0.25rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+.small { font-size: 0.8125rem; }
+
+/* поверхность-карточка */
+.card {
+  background: var(--container);
+  border-radius: var(--radius-l);
+  padding: var(--pad);
 }
 
+.stack { display: grid; gap: var(--gap); }
+.row   { display: flex; align-items: center; gap: var(--gap); }
+.grow  { flex: 1; min-width: 0; }
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap;
+}
+
+/* подвал занятия: кнопки внизу экрана, под большим пальцем */
 .stage-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
   display: flex;
-  justify-content: space-between;
   gap: 0.5rem;
-  margin-top: 1.25rem;
+  /* auto — прижат к низу, даже если содержимого мало */
+  margin: auto -1rem 0;
+  padding: 1rem 1rem calc(0.75rem + env(safe-area-inset-bottom));
+  background: var(--bg);
 }
+.stage-footer > * { flex: 1; }
 
-.stage-footer .el-button + .el-button {
-  margin-left: 0;
+/* волна нажатия (v-ripple) */
+[data-ripple] {
+  position: relative;
+  isolation: isolate;
 }
+.ripple-layer {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.ripple-wave {
+  position: absolute;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.16;
+  transform: scale(0);
+  animation: ripple-grow 0.4s ease-out forwards;
+}
+.ripple-wave--out { opacity: 0; transition: opacity 0.3s; }
+@keyframes ripple-grow { to { transform: scale(1); } }

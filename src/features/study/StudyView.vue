@@ -1,11 +1,11 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, onBeforeRouteLeave } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { ElMessage, ElMessageBox } from 'element-plus'
 import { study as studyRepo } from '../../data/index.js'
 import { useSettingsStore } from '../../stores/settings.js'
 import { useLibraryStore } from '../../stores/library.js'
+import { toast, confirm } from '../../shared/ui/feedback.js'
 import { activeStages } from './stages.js'
 import StudySelect from './stages/StudySelect.vue'
 import StudyResult from './stages/StudyResult.vue'
@@ -16,10 +16,11 @@ const settingsStore = useSettingsStore()
 const library       = useLibraryStore()
 
 const wordsPerSession = computed(() => settingsStore.settings.learning.words_per_session)
-const stages          = computed(() => activeStages(settingsStore.settings))
+const stages          = computed(() => activeStages(settingsStore.settings.stages))
 
 const loadingWords = ref(false)
 const saving       = ref(false)
+const finished     = ref(false)
 const newWords     = ref([])
 const extraWords   = ref([])
 const studyWords   = ref([])
@@ -38,7 +39,7 @@ async function fetchWords() {
     newWords.value   = data.newWords
     extraWords.value = data.extraWords
   } catch {
-    ElMessage.error(t('errors.load'))
+    toast.error(t('errors.load'))
   } finally {
     loadingWords.value = false
   }
@@ -76,72 +77,65 @@ async function completeSession() {
       .filter(w => !failedIds.value.has(w.id))
       .map(w => w.id)
     await studyRepo.complete(library.current.id, learnedIds)
-    ElMessage.success(t('study.completed'))
+    finished.value = true
+    toast.success(t('study.completed'))
     router.push({ name: 'home' })
   } catch {
-    ElMessage.error(t('errors.save'))
+    toast.error(t('errors.save'))
   } finally {
     saving.value = false
   }
 }
 
-async function confirmExit() {
-  if (step.value === 'select') {
-    router.push({ name: 'home' })
-    return
-  }
-  try {
-    await ElMessageBox.confirm(t('study.exitConfirm'), t('common.confirm'), {
-      confirmButtonText: t('common.yes'),
-      cancelButtonText:  t('common.no'),
-      type: 'warning',
-    })
-    router.push({ name: 'home' })
-  } catch {}
+function exit() {
+  router.push({ name: 'home' })
 }
+
+// любой уход с начатого занятия (крестик, «Назад», ссылка) — с подтверждением
+onBeforeRouteLeave(() => {
+  if (step.value === 'select' || finished.value) return true
+  return confirm({
+    message:     t('study.exitConfirm'),
+    confirmText: t('study.exitYes'),
+    cancelText:  t('study.exitNo'),
+    danger:      true,
+    history:     false,
+  })
+})
 
 onMounted(fetchWords)
 </script>
 
 <template>
-  <div class="session">
-    <StudySelect
-        v-if="step === 'select'"
-        :new-words="newWords"
-        :loading="loadingWords"
-        :words-per-session="wordsPerSession"
-        @start="onStart"
-        @exit="confirmExit"
-    />
+  <StudySelect
+      v-if="step === 'select'"
+      :new-words="newWords"
+      :loading="loadingWords"
+      :words-per-session="wordsPerSession"
+      @start="onStart"
+      @exit="exit"
+  />
 
-    <component
-        v-else-if="step === 'stages'"
-        :is="currentStage.component"
-        :key="currentStage.key"
-        :words="studyWords"
-        :all-words="allWords"
-        :mode="currentStage.mode"
-        :title="t(currentStage.title)"
-        :extra-letters="settingsStore.settings.learning?.extra_letters ?? 0"
-        @done="onStageDone"
-        @exit="confirmExit"
-    />
+  <component
+      :is="currentStage.component"
+      v-else-if="step === 'stages'"
+      :key="currentStage.key"
+      :words="studyWords"
+      :all-words="allWords"
+      :mode="currentStage.mode"
+      :title="t(currentStage.title)"
+      :extra-letters="settingsStore.settings.learning?.extra_letters ?? 0"
+      @done="onStageDone"
+      @exit="exit"
+  />
 
-    <StudyResult
-        v-else-if="step === 'result'"
-        :words="studyWords"
-        :failed-ids="failedIds"
-        :saving="saving"
-        @toggle="toggleResult"
-        @complete="completeSession"
-        @exit="confirmExit"
-    />
-  </div>
+  <StudyResult
+      v-else-if="step === 'result'"
+      :words="studyWords"
+      :failed-ids="failedIds"
+      :saving="saving"
+      @toggle="toggleResult"
+      @complete="completeSession"
+      @exit="exit"
+  />
 </template>
-
-<style scoped>
-.session {
-  max-width: 700px;
-  margin: 0 auto;
-}
-</style>

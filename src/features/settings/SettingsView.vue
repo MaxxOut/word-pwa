@@ -1,81 +1,104 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { ElMessage, ElMessageBox } from 'element-plus'
 import { libraries as librariesRepo, maintenance } from '../../data/index.js'
 import { useSettingsStore } from '../../stores/settings.js'
 import { useLibraryStore } from '../../stores/library.js'
-import { STAGES } from '../study/stages.js'
+import { toast, confirm } from '../../shared/ui/feedback.js'
+import { STAGES, REPEAT_STAGES } from '../study/stages.js'
+import AppTopBar from '../../shared/components/AppTopBar.vue'
+import UiButton from '../../shared/ui/UiButton.vue'
+import UiSegmented from '../../shared/ui/UiSegmented.vue'
+import UiStepper from '../../shared/ui/UiStepper.vue'
+import UiSwitch from '../../shared/ui/UiSwitch.vue'
 
 const { t }         = useI18n()
 const settingsStore = useSettingsStore()
 const library       = useLibraryStore()
-const saving        = ref(false)
 
 const version = __APP_VERSION__
 
+// копия для полей; изменения сохраняются сами
 const form = ref(null)
 
-watch(
-  () => settingsStore.settings,
-  (val) => {
-    form.value = {
-      locale:   val.locale ?? 'auto', // в el-select null не выбирается
-      learning: { ...val.learning },
-      repeat:   { ...val.repeat },
-      stages:   { ...val.stages },
+function fill(val) {
+  form.value = {
+    locale:     val.locale,
+    appearance: val.appearance,
+    text_size:  val.text_size,
+    learning:   { ...val.learning },
+    repeat:     { ...val.repeat },
+    stages:     { ...val.stages },
+    repeat_stages: { ...val.repeat_stages },
+  }
+}
+fill(settingsStore.settings)
+
+let saveTimer = null
+watch(form, value => {
+  clearTimeout(saveTimer)
+  saveTimer = setTimeout(async () => {
+    try {
+      await settingsStore.update(value)
+    } catch {
+      toast.error(t('errors.save'))
     }
-  },
-  { immediate: true },
-)
+  }, 300)
+}, { deep: true })
 
-async function save() {
-  saving.value = true
-  try {
-    await settingsStore.update({
-      ...form.value,
-      locale: form.value.locale === 'auto' ? null : form.value.locale,
-    })
-    ElMessage.success(t('settings.saved'))
-  } catch {
-    ElMessage.error(t('errors.save'))
-  } finally {
-    saving.value = false
-  }
-}
+const APPEARANCE = computed(() => [
+  { value: 'light',  label: t('settings.light') },
+  { value: 'dark',   label: t('settings.dark') },
+  { value: 'system', label: t('settings.system') },
+])
 
-// подтверждение для необратимых действий
-async function confirmDanger(message) {
-  try {
-    await ElMessageBox.confirm(message, t('common.confirm'), {
-      confirmButtonText:  t('common.yes'),
-      cancelButtonText:   t('common.no'),
-      confirmButtonClass: 'el-button--danger',
-      type: 'warning',
-    })
-    return true
-  } catch {
-    return false
-  }
-}
+const TEXT_SIZES = [
+  { value: 's',  label: 'S' },
+  { value: 'm',  label: 'M' },
+  { value: 'l',  label: 'L' },
+  { value: 'xl', label: 'XL' },
+]
+
+const LOCALES = computed(() => [
+  { value: null, label: t('settings.languageAuto') },
+  { value: 'ru', label: 'RU' },
+  { value: 'uk', label: 'UA' },
+])
+
+const libName = computed(() => library.current?.short_name)
 
 async function resetProgress() {
   const lib = library.current
-  if (!await confirmDanger(t('settings.resetProgressConfirm', { lib: lib.short_name }))) return
+  const ok  = await confirm({
+    message:     t('settings.resetProgressConfirm', { lib: lib.short_name }),
+    confirmText: t('settings.reset'),
+    danger:      true,
+  })
+  if (!ok) return
   await librariesRepo.resetProgress(lib.id)
-  ElMessage.success(t('settings.done'))
+  toast.success(t('settings.done'))
 }
 
 async function clearLibrary() {
   const lib = library.current
-  if (!await confirmDanger(t('settings.clearLibraryConfirm', { lib: lib.short_name }))) return
+  const ok  = await confirm({
+    message:     t('settings.clearLibraryConfirm', { lib: lib.short_name }),
+    confirmText: t('settings.clear'),
+    danger:      true,
+  })
+  if (!ok) return
   await librariesRepo.clear(lib.id)
   await library.load()
-  ElMessage.success(t('settings.done'))
+  toast.success(t('settings.done'))
 }
 
 async function wipeAll() {
-  if (!await confirmDanger(t('settings.wipeAllConfirm'))) return
+  const ok = await confirm({
+    message:     t('settings.wipeAllConfirm'),
+    confirmText: t('settings.wipe'),
+    danger:      true,
+  })
+  if (!ok) return
   await maintenance.wipeAll()
   try { localStorage.clear() } catch {}
   location.reload()
@@ -83,147 +106,126 @@ async function wipeAll() {
 </script>
 
 <template>
-  <div class="settings">
-    <h2>{{ t('settings.title') }}</h2>
+  <AppTopBar :title="t('settings.title')" :library="false" />
 
-    <el-card shadow="never">
-      <template #header>{{ t('settings.interface') }}</template>
-      <el-form label-position="top">
-        <el-form-item :label="t('settings.language')">
-          <el-select v-model="form.locale" class="select">
-            <el-option value="auto" :label="t('settings.languageAuto')" />
-            <el-option value="ru" label="Русский" />
-            <el-option value="uk" label="Українська" />
-          </el-select>
-        </el-form-item>
-      </el-form>
-    </el-card>
+  <div class="sections">
+    <section class="card section">
+      <h3>{{ t('settings.interface') }}</h3>
+      <UiSegmented v-model="form.appearance" :label="t('settings.theme')" :options="APPEARANCE" />
+      <UiSegmented v-model="form.text_size" :label="t('settings.textSize')" :options="TEXT_SIZES" />
+      <UiSegmented v-model="form.locale" :label="t('settings.language')" :options="LOCALES" />
+    </section>
 
-    <el-card shadow="never">
-      <template #header>{{ t('settings.learning') }}</template>
-      <el-form label-position="top">
-        <el-form-item :label="t('settings.wordsPerSession')">
-          <el-input-number v-model="form.learning.words_per_session" :min="1" :max="10" />
-          <span class="hint">{{ t('settings.range', { min: 1, max: 10 }) }}</span>
-        </el-form-item>
-        <el-form-item :label="t('settings.extraLetters')">
-          <el-input-number v-model="form.learning.extra_letters" :min="0" :max="5" />
-          <span class="hint">{{ t('settings.extraLettersHint') }}</span>
-        </el-form-item>
-        <el-form-item :label="t('settings.stages')">
-          <div class="stages">
-            <el-checkbox v-for="s in STAGES" :key="s.key" v-model="form.stages[s.key]">
-              {{ t(s.title) }}
-            </el-checkbox>
-          </div>
-        </el-form-item>
-      </el-form>
-    </el-card>
+    <section class="card section">
+      <h3>{{ t('settings.learning') }}</h3>
+      <UiStepper
+          v-model="form.learning.words_per_session"
+          :label="t('settings.wordsPerSession')"
+          :min="1"
+          :max="10"
+      />
+      <UiStepper
+          v-model="form.learning.extra_letters"
+          :label="t('settings.extraLetters')"
+          :hint="t('settings.extraLettersHint')"
+          :min="0"
+          :max="5"
+      />
+      <h4 class="sub">{{ t('settings.stages') }}</h4>
+      <UiSwitch v-for="s in STAGES" :key="s.key" v-model="form.stages[s.key]" :label="t(s.title)" />
+    </section>
 
-    <el-card shadow="never">
-      <template #header>{{ t('settings.repeat') }}</template>
-      <el-form label-position="top">
-        <el-form-item :label="t('settings.wordsPerSession')">
-          <el-input-number v-model="form.repeat.words_per_session" :min="4" :max="20" />
-          <span class="hint">{{ t('settings.range', { min: 4, max: 20 }) }}</span>
-        </el-form-item>
-        <el-form-item :label="t('settings.daysAfterLearning')">
-          <el-input-number v-model="form.repeat.days_after_learning" :min="1" :max="30" />
-          <span class="hint">{{ t('settings.daysAfterLearningHint', { n: form.repeat.days_after_learning }) }}</span>
-        </el-form-item>
-        <el-form-item :label="t('settings.daysAfterRepeat')">
-          <el-input-number v-model="form.repeat.days_after_repeat" :min="1" :max="60" />
-          <span class="hint">{{ t('settings.daysAfterRepeatHint', { n: form.repeat.days_after_repeat }) }}</span>
-        </el-form-item>
-      </el-form>
-    </el-card>
+    <section class="card section">
+      <h3>{{ t('settings.repeat') }}</h3>
+      <UiStepper
+          v-model="form.repeat.words_per_session"
+          :label="t('settings.wordsPerSession')"
+          :min="4"
+          :max="20"
+      />
+      <UiStepper
+          v-model="form.repeat.days_after_learning"
+          :label="t('settings.daysAfterLearning')"
+          :hint="t('settings.daysAfterLearningHint', { n: form.repeat.days_after_learning })"
+          :min="1"
+          :max="30"
+      />
+      <UiStepper
+          v-model="form.repeat.days_after_repeat"
+          :label="t('settings.daysAfterRepeat')"
+          :hint="t('settings.daysAfterRepeatHint', { n: form.repeat.days_after_repeat })"
+          :min="1"
+          :max="60"
+      />
+      <h4 class="sub">{{ t('settings.stages') }}</h4>
+      <UiSwitch
+          v-for="s in REPEAT_STAGES"
+          :key="s.key"
+          v-model="form.repeat_stages[s.key]"
+          :label="t(s.title)"
+      />
+    </section>
 
-    <el-button type="primary" :loading="saving" class="save" @click="save">
-      {{ t('common.save') }}
-    </el-button>
-
-    <el-card shadow="never">
-      <template #header>{{ t('settings.data') }}</template>
-      <div class="danger-list">
-        <div class="danger-row">
-          <div>
-            <div>{{ t('settings.resetProgress', { lib: library.current?.short_name }) }}</div>
-            <div class="hint">{{ t('settings.resetProgressHint') }}</div>
-          </div>
-          <el-button @click="resetProgress">{{ t('settings.reset') }}</el-button>
+    <section class="card section">
+      <h3>{{ t('settings.data') }}</h3>
+      <div class="action">
+        <div class="grow">
+          <div>{{ t('settings.resetProgress', { lib: libName }) }}</div>
+          <div class="muted small">{{ t('settings.resetProgressHint') }}</div>
         </div>
-        <div class="danger-row">
-          <div>
-            <div>{{ t('settings.clearLibrary', { lib: library.current?.short_name }) }}</div>
-            <div class="hint">{{ t('settings.clearLibraryHint') }}</div>
-          </div>
-          <el-button type="danger" plain @click="clearLibrary">{{ t('settings.clear') }}</el-button>
-        </div>
-        <div class="danger-row">
-          <div>
-            <div>{{ t('settings.wipeAll') }}</div>
-            <div class="hint">{{ t('settings.wipeAllHint') }}</div>
-          </div>
-          <el-button type="danger" @click="wipeAll">{{ t('settings.wipe') }}</el-button>
-        </div>
+        <UiButton variant="outlined" @click="resetProgress">{{ t('settings.reset') }}</UiButton>
       </div>
-    </el-card>
+      <div class="action">
+        <div class="grow">
+          <div>{{ t('settings.clearLibrary', { lib: libName }) }}</div>
+          <div class="muted small">{{ t('settings.clearLibraryHint') }}</div>
+        </div>
+        <UiButton variant="outlined" class="danger" @click="clearLibrary">{{ t('settings.clear') }}</UiButton>
+      </div>
+      <div class="action">
+        <div class="grow">
+          <div>{{ t('settings.wipeAll') }}</div>
+          <div class="muted small">{{ t('settings.wipeAllHint') }}</div>
+        </div>
+        <UiButton variant="danger" @click="wipeAll">{{ t('settings.wipe') }}</UiButton>
+      </div>
+    </section>
 
-    <div class="version">WordApp {{ version }}</div>
+    <p class="version muted small">WordApp {{ version }}</p>
   </div>
 </template>
 
 <style scoped>
-.settings {
-  max-width: 600px;
-  margin: 0 auto;
+.sections {
   display: grid;
-  gap: 1.25rem;
+  gap: 0.75rem;
 }
 
-.settings h2 {
-  font-size: 1.5rem;
-}
-
-.select {
-  width: 14rem;
-}
-
-.hint {
-  margin-left: 0.75rem;
-  font-size: 0.8125rem;
-  color: var(--el-text-color-secondary);
-}
-
-.danger-row .hint {
-  margin-left: 0;
-}
-
-.stages {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0 1rem;
-}
-
-.save {
-  justify-self: start;
-}
-
-.danger-list {
+.section {
   display: grid;
-  gap: 1rem;
+  gap: 0.75rem;
+  border-radius: 0.5rem;
+  padding: 1rem 1.125rem;
 }
 
-.danger-row {
+.sub {
+  margin-top: 0.5rem;
+  font-family: var(--font-title);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.action {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 1rem;
 }
-
-.version {
-  text-align: center;
-  font-size: 0.75rem;
-  color: var(--el-text-color-secondary);
+.action + .action {
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--container-hi);
 }
+
+.danger { color: var(--error); }
+
+.version { text-align: center; }
 </style>

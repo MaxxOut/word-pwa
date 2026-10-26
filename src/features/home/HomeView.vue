@@ -4,207 +4,205 @@ import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { stats as statsRepo } from '../../data/index.js'
 import { useLibraryStore } from '../../stores/library.js'
+import AppTopBar from '../../shared/components/AppTopBar.vue'
+import UiButton from '../../shared/ui/UiButton.vue'
+import UiEmpty from '../../shared/ui/UiEmpty.vue'
+import UiSpinner from '../../shared/ui/UiSpinner.vue'
 
 const router  = useRouter()
 const { t }   = useI18n()
 const library = useLibraryStore()
 
-const loading = ref(false)
-const stats   = ref(null)
+const stats = ref(null)
 
 const learnedPercent = computed(() => {
   if (!stats.value?.words) return 0
   return Math.round((stats.value.learned / stats.value.words) * 100)
 })
 
-const maxActivity = computed(() =>
-  Math.max(1, ...(stats.value?.activity ?? []).map(d => d.studied + d.repeated)),
-)
-
 async function load() {
   if (!library.current) return
-  loading.value = true
-  try {
-    stats.value = await statsRepo.library(library.current.id)
-  } finally {
-    loading.value = false
-  }
+  stats.value = await statsRepo.library(library.current.id)
 }
 
 watch(() => library.current?.id, load, { immediate: true })
 </script>
 
 <template>
-  <div class="home" v-loading="loading">
+  <AppTopBar brand />
 
-    <div class="home-header">
-      <h2>{{ t('home.hello') }}</h2>
-      <el-tag v-if="library.current" :color="library.current.color" effect="dark" class="lib-tag">
-        {{ library.current.short_name }}
-      </el-tag>
-    </div>
+  <UiSpinner v-if="!stats" />
 
-    <template v-if="stats">
-      <!-- пустая библиотека -->
-      <el-empty v-if="!stats.words" :description="t('home.empty')">
-        <el-button type="primary" @click="router.push({ name: 'words' })">
-          {{ t('home.addWords') }}
-        </el-button>
-      </el-empty>
+  <UiEmpty v-else-if="!stats.words" :title="t('home.empty')" :text="t('home.emptyHint')">
+    <UiButton variant="filled" icon="add" @click="router.push({ name: 'words' })">
+      {{ t('home.addWords') }}
+    </UiButton>
+  </UiEmpty>
 
-      <template v-else>
-        <div class="tiles">
-          <el-card class="tile tile--accent" shadow="never">
-            <div class="tile-body">
-              <div>
-                <div class="tile-label">{{ t('home.newWords') }}</div>
-                <div class="tile-value">{{ stats.new }}</div>
-              </div>
-              <el-button type="primary" :disabled="!stats.new" @click="router.push({ name: 'study' })">
-                {{ t('home.study') }}
-              </el-button>
-            </div>
-          </el-card>
+  <div v-else class="bento">
+    <section class="tile tile--hero tile--learn">
+      <div class="label">{{ t('home.newWords') }}</div>
+      <div class="num value">{{ stats.new }}</div>
+      <UiButton variant="filled" :disabled="!stats.new" @click="router.push({ name: 'study' })">
+        {{ t('home.study') }}
+      </UiButton>
+    </section>
 
-          <el-card class="tile" shadow="never">
-            <div class="tile-body">
-              <div>
-                <div class="tile-label">{{ t('home.due') }}</div>
-                <div class="tile-value">{{ stats.due }}</div>
-              </div>
-              <el-button :disabled="!stats.due" @click="router.push({ name: 'repeat' })">
-                {{ t('home.repeat') }}
-              </el-button>
-            </div>
-          </el-card>
+    <section class="tile tile--hero tile--repeat">
+      <div class="label">{{ t('home.due') }}</div>
+      <div class="num value">{{ stats.due }}</div>
+      <UiButton variant="outlined" :disabled="!stats.due" @click="router.push({ name: 'repeat' })">
+        {{ t('home.repeat') }}
+      </UiButton>
+    </section>
 
-          <el-card class="tile" shadow="never">
-            <div class="progress">
-              <el-progress
-                  type="circle"
-                  :percentage="learnedPercent"
-                  :width="80"
-                  :color="library.current.color"
-              />
-              <div class="progress-stats">
-                <div>{{ t('home.learnedOf', { learned: stats.learned, total: stats.words }) }}</div>
-                <div>{{ t('home.ignored', { n: stats.ignored }) }}</div>
-                <div>
-                  <el-link type="warning" underline="never" @click="router.push({ name: 'words', query: { status: 'untranslated' } })">
-                    {{ t('home.untranslated', { n: stats.untranslated }) }}
-                  </el-link>
-                </div>
-              </div>
-            </div>
-          </el-card>
+    <section class="tile tile--progress">
+      <div
+          class="ring"
+          :style="{ '--p': learnedPercent }"
+          role="img"
+          :aria-label="t('home.learnedPercent', { n: learnedPercent })"
+      >
+        <span class="num">{{ learnedPercent }}%</span>
+      </div>
+      <div class="facts">
+        <div><b class="num">{{ stats.learned }}</b> {{ t('home.learnedOf', { total: stats.words }) }}</div>
+        <div><b class="num">{{ stats.ignored }}</b> {{ t('home.ignored') }}</div>
+        <RouterLink
+            v-if="stats.untranslated"
+            class="facts-link"
+            :to="{ name: 'words', query: { status: 'untranslated' } }"
+        >
+          <b class="num">{{ stats.untranslated }}</b> {{ t('home.untranslated') }}
+        </RouterLink>
+        <div v-else><b class="num">0</b> {{ t('home.untranslated') }}</div>
+      </div>
+    </section>
 
-          <el-card class="tile" shadow="never">
-            <div class="tile-label">{{ t('home.activity') }}</div>
-            <div class="activity">
-              <div
-                  v-for="day in stats.activity"
-                  :key="day.date"
-                  class="activity-bar"
-                  :class="{ 'activity-bar--empty': !(day.studied + day.repeated) }"
-                  :style="{
-                    height: `${Math.max(6, ((day.studied + day.repeated) / maxActivity) * 100)}%`,
-                    backgroundColor: (day.studied + day.repeated) ? library.current.color : undefined,
-                  }"
-                  :title="`${day.date}: +${day.studied} / ↻${day.repeated}`"
-              />
-            </div>
-          </el-card>
+    <section class="tile">
+      <div class="label">{{ t('home.activity') }}</div>
+      <!-- столбик дня из двух этажей: снизу — учил, сверху — повторял (было/не было) -->
+      <div class="bars">
+        <div
+            v-for="day in stats.activity"
+            :key="day.date"
+            class="bar"
+            :title="t('home.activityDay', { date: day.date, studied: day.studied, repeated: day.repeated })"
+        >
+          <span class="part" :class="{ 'part--repeated': day.repeated }" />
+          <span class="part" :class="{ 'part--studied': day.studied }" />
         </div>
-      </template>
-    </template>
-
+      </div>
+      <div class="legend">
+        <span><i class="dot part--studied" />{{ t('home.legendStudied') }}</span>
+        <span><i class="dot part--repeated" />{{ t('home.legendRepeated') }}</span>
+      </div>
+    </section>
   </div>
 </template>
 
 <style scoped>
-.home {
-  max-width: 640px;
-  margin: 0 auto;
-  min-height: 200px;
-}
-
-.home-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 1.5rem;
-}
-
-.home-header h2 {
-  font-size: 1.5rem;
-  font-weight: 700;
-}
-
-.lib-tag {
-  border: none;
-  color: var(--el-text-color-primary);
-  font-weight: 700;
-}
-
-.tiles {
+.bento {
   display: grid;
-  gap: 0.75rem;
+  gap: 0.5rem;
 }
 
 .tile {
-  border-radius: 1.25rem;
+  display: grid;
+  gap: 0.25rem;
+  padding: 1rem 1.125rem;
+  border-radius: 0.5rem;
+  background: var(--container);
 }
 
-.tile--accent {
-  background: var(--el-color-primary-light-9);
+.label {
+  font-size: 0.8125rem;
+  letter-spacing: 0.02em;
+  color: var(--muted);
 }
 
-.tile-body {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
+/* подпись сверху, крупная цифра и кнопка снизу */
+.tile--hero {
+  grid-template-columns: 1fr auto;
+  grid-template-areas: "label label" "value action";
+  align-items: end;
+  row-gap: 0.75rem;
+}
+.tile--hero .label { grid-area: label; }
+.tile--hero .value { grid-area: value; font-size: 3.5rem; }
+.tile--hero > :last-child { grid-area: action; }
+.tile--learn  { background: var(--primary-c); color: var(--on-primary-c); }
+.tile--learn .label { color: inherit; opacity: 0.8; }
+.tile--repeat { background: var(--container-hi); }
+
+.value { font-size: 2.5rem; }
+
+.tile--progress {
+  grid-template-columns: auto 1fr;
+  align-items: center;
   gap: 1rem;
 }
 
-.tile-label {
-  font-size: 0.8125rem;
-  color: var(--el-text-color-secondary);
-}
-
-.tile-value {
-  font-size: 2.5rem;
-  font-weight: 700;
-  line-height: 1.1;
-  font-variant-numeric: tabular-nums;
-}
-
-.progress {
-  display: flex;
-  align-items: center;
-  gap: 1.25rem;
-}
-
-.progress-stats {
+.ring {
+  width: 5rem;
+  height: 5rem;
   display: grid;
-  gap: 0.25rem;
-  font-size: 0.875rem;
-  color: var(--el-text-color-regular);
+  place-items: center;
+  border-radius: 50%;
+  background: conic-gradient(var(--primary) calc(var(--p) * 1%), var(--container-hi) 0);
+}
+.ring span {
+  display: grid;
+  place-items: center;
+  width: 3.875rem;
+  height: 3.875rem;
+  border-radius: 50%;
+  background: var(--container);
+  font-size: 0.9375rem;
 }
 
-.activity {
+.facts {
+  display: grid;
+  gap: 0.125rem;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+.facts b { color: var(--on); }
+.facts-link { color: inherit; text-decoration: underline; text-underline-offset: 0.2em; }
+
+.bars {
   display: flex;
   align-items: flex-end;
   gap: 3px;
-  height: 3.5rem;
-  margin-top: 0.5rem;
+  height: 4.5rem;
+  margin-top: 0.375rem;
 }
-
-.activity-bar {
+.bar {
   flex: 1;
-  border-radius: 3px 3px 1px 1px;
+  height: 100%;
+  display: grid;
+  grid-template-rows: 1fr 1fr;
+  gap: 2px;
 }
+.part {
+  border-radius: 2px;
+  background: var(--container-hi);
+}
+.part--studied  { background: var(--primary); }
+.part--repeated { background: color-mix(in srgb, var(--primary) 45%, var(--container-hi)); }
 
-.activity-bar--empty {
-  background: var(--el-fill-color);
+.legend {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.legend span { display: inline-flex; align-items: center; gap: 0.375rem; }
+.dot { width: 0.625rem; height: 0.625rem; border-radius: 0.1875rem; }
+
+@media (min-width: 600px) {
+  .bento { grid-template-columns: 1fr 1fr; }
+  .tile--progress, .tile:last-child { grid-column: span 2; }
 }
 </style>

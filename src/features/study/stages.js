@@ -10,7 +10,10 @@ export const STAGES = [
   { key: 'input',       component: InputStage,       mode: null,      title: 'stages.input' },
 ]
 
-// включённые в настройках; keys — какие этапы вообще доступны в режиме
-export function activeStages(settings, keys = STAGES.map(s => s.key)) {
-  return STAGES.filter(s => keys.includes(s.key) && settings.stages?.[s.key] !== false)
+// в повторении — только переводы
+export const REPEAT_STAGES = STAGES.filter(s => s.key === 'direct' || s.key === 'reverse')
+
+// включённые в настройках; enabled — { key: bool } (settings.stages или settings.repeat_stages)
+export function activeStages(enabled, list = STAGES) {
+  return list.filter(s => enabled?.[s.key] !== false)
 }
