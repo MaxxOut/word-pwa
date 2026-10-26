@@ -182,7 +182,8 @@ const words = {
     return db.words.delete(id)
   },
 
-  // импорт строк из CSV; strategy: skip | replace
+  // импорт строк из CSV; strategy: skip | replace.
+  // Если в строке есть прогресс — он переносится (и при замене дубля тоже)
   async import(libraryId, rows, strategy = 'skip') {
     const result = { imported: 0, skipped: 0, replaced: 0 }
 
@@ -197,27 +198,29 @@ const words = {
 
         if (dup && strategy === 'skip') { result.skipped++; continue }
 
+        const content = {
+          word:          row.word.trim(),
+          translation:   cleanList(row.translation),
+          transcription: row.transcription || null,
+          examples:      cleanList(row.examples),
+        }
+        const progress = row.progress && progressFrom(row.progress, now)
+
         if (dup) {
-          await db.words.update(dup.id, {
-            word:          row.word.trim(),
-            translation:   cleanList(row.translation),
-            transcription: row.transcription || null,
-            examples:      cleanList(row.examples),
-            updated_at:    now,
-          })
+          const patch = { ...content, ...progress, updated_at: now }
+          if (progress) patch.created_at = row.progress.created_at ?? dup.created_at
+          await db.words.update(dup.id, patch)
+          Object.assign(dup, patch)
           result.replaced++
           continue
         }
 
         const word = {
-          id: uuid(), library_id: libraryId,
-          word: row.word.trim(), word_lc: key,
-          translation: cleanList(row.translation),
-          transcription: row.transcription || null,
-          examples: cleanList(row.examples),
+          id: uuid(), library_id: libraryId, word_lc: key, ...content,
           is_learned: false, is_ignored: false,
           learned_at: null, repeated_at: null,
-          created_at: now, updated_at: now,
+          ...progress,
+          created_at: row.progress?.created_at ?? now, updated_at: now,
         }
         existing.set(key, word) // дубли внутри самого файла
         toAdd.push(word)
@@ -229,6 +232,16 @@ const words = {
 
     return result
   },
+}
+
+// выученное без даты — считаем выученным сейчас, иначе не попадёт в повторение
+function progressFrom(p, now) {
+  return {
+    is_learned:  p.is_learned,
+    is_ignored:  p.is_ignored,
+    learned_at:  p.is_learned ? (p.learned_at ?? now) : null,
+    repeated_at: p.is_learned ? p.repeated_at : null,
+  }
 }
 
 // ----- изучение -----

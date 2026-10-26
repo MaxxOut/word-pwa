@@ -44,4 +44,8 @@ export default defineConfig({
   server: {
     port: 5173,
   },
+  test: {
+    // IndexedDB в Node — fake-indexeddb
+    setupFiles: ['fake-indexeddb/auto'],
+  },
 })

@@ -1,5 +1,7 @@
-// CSV: «слово;перевод1|перевод2;транскрипция;пример1|пример2»
-// совместим с форматом старого бэкенда (fputcsv с разделителем ;)
+// CSV: «слово;перевод1|перевод2;транскрипция;пример1|пример2;статус;выучено;повторено;добавлено»
+// первые 4 колонки — формат старого бэкенда (fputcsv с разделителем ;), такие файлы
+// импортируются как новые слова. Остальные — прогресс: статус learned / ignored /
+// learned|ignored / пусто, даты в ISO. Файл экспорта = резервная копия библиотеки.
 
 const SEP  = ';'
 const LIST = '|'
@@ -32,15 +34,41 @@ function splitList(value) {
   return (value ?? '').split(LIST).map(s => s.trim()).filter(Boolean)
 }
 
+// кривую дату считаем пустой — не ломать импорт из-за одной ячейки
+function parseDate(value) {
+  const s = (value ?? '').trim()
+  if (!s) return null
+  const d = new Date(s)
+  return isNaN(d) ? null : d.toISOString()
+}
+
+function parseProgress([status, learnedAt, repeatedAt, createdAt]) {
+  const flags      = splitList(status).map(s => s.toLowerCase())
+  const is_learned = flags.includes('learned')
+  return {
+    is_learned,
+    is_ignored:  flags.includes('ignored'),
+    learned_at:  is_learned ? parseDate(learnedAt) : null,
+    repeated_at: is_learned ? parseDate(repeatedAt) : null,
+    created_at:  parseDate(createdAt),
+  }
+}
+
+// progress — null, если в строке только 4 колонки (прогресса в файле нет)
 export function parseWordsCsv(text) {
   return parseRows(text.replace(/^﻿/, ''))
-    .map(([word = '', translation, transcription, examples]) => ({
+    .map(([word = '', translation, transcription, examples, ...rest]) => ({
       word:          word.trim(),
       translation:   splitList(translation),
       transcription: (transcription ?? '').trim() || null,
       examples:      splitList(examples),
+      progress:      rest.length ? parseProgress(rest) : null,
     }))
     .filter(r => r.word)
+}
+
+function statusOf(w) {
+  return [w.is_learned && 'learned', w.is_ignored && 'ignored'].filter(Boolean).join(LIST)
 }
 
 function escape(value) {
@@ -55,6 +83,10 @@ export function stringifyWordsCsv(words) {
     (w.translation ?? []).join(LIST),
     w.transcription ?? '',
     (w.examples ?? []).join(LIST),
+    statusOf(w),
+    w.learned_at ?? '',
+    w.repeated_at ?? '',
+    w.created_at ?? '',
   ].map(escape).join(SEP))
   return BOM + lines.join('\r\n') + '\r\n'
 }

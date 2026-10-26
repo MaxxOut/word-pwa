@@ -31,6 +31,9 @@ async function boot() {
   await useLibraryStore().load()
 
   app.mount('#app')
+
+  // просим браузер не удалять данные при нехватке места (молча, без запроса)
+  navigator.storage?.persist?.().catch(() => {})
 }
 
 boot()
