@@ -13,12 +13,15 @@ export function initUpdates() {
     onNeedRefresh() {
       needRefresh.value = true
     },
-    // PWA на телефоне живёт в памяти днями — проверяем, когда приложение снова на экране
+    // PWA на телефоне живёт в памяти днями — проверяем, когда приложение снова на экране,
+    // и раз в полчаса, пока оно открыто
     onRegisteredSW(_url, registration) {
       if (!registration) return
-      document.addEventListener('visibilitychange', () => {
+      const check = () => {
         if (document.visibilityState === 'visible') registration.update().catch(() => {})
-      })
+      }
+      document.addEventListener('visibilitychange', check)
+      setInterval(check, 30 * 60 * 1000)
     },
   })
 }

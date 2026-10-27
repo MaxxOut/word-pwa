@@ -63,6 +63,14 @@ function onAfterEnter() {
   overflow-x: clip;
 }
 
+/* браузер сам ведёт только вертикальную прокрутку, горизонтальный жест — свайпу разделов
+   (иначе на длинном списке браузер забирал жест под прокрутку и свайп не срабатывал) */
+.main:not(.main--immersive) {
+  touch-action: pan-y;
+  /* на всю высоту — свайп ловится и на пустом месте под коротким списком */
+  min-height: 100dvh;
+}
+
 .pages { display: grid; }
 .page { grid-area: 1 / 1; min-width: 0; position: relative; }
 

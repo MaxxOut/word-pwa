@@ -10,6 +10,7 @@ import { toast } from '../../shared/ui/feedback.js'
 import AppTopBar from '../../shared/components/AppTopBar.vue'
 import AppIcon from '../../shared/components/AppIcon.vue'
 import UiIconButton from '../../shared/ui/UiIconButton.vue'
+import UiFilterToggle from '../../shared/ui/UiFilterToggle.vue'
 import UiButton from '../../shared/ui/UiButton.vue'
 import UiInput from '../../shared/ui/UiInput.vue'
 import UiEmpty from '../../shared/ui/UiEmpty.vue'
@@ -108,18 +109,7 @@ watch(libraryId, () => fetchWords(), { immediate: true })
 
 <template>
   <AppTopBar :title="t('words.title')">
-    <span class="tools-toggle">
-      <UiIconButton
-          icon="filter"
-          :label="t('words.filters')"
-          :variant="toolsOpen ? 'tonal' : 'standard'"
-          :aria-expanded="toolsOpen"
-          aria-controls="word-tools"
-          @click="toolsOpen = !toolsOpen"
-      />
-      <!-- фильтр включён, но панель свёрнута -->
-      <span v-if="hasFilters && !toolsOpen" class="tools-dot" />
-    </span>
+    <UiFilterToggle v-model="toolsOpen" :label="t('words.filters')" :active="hasFilters" controls="word-tools" />
 
     <template #below>
       <div v-show="toolsOpen" id="word-tools" class="tools">
@@ -140,8 +130,8 @@ watch(libraryId, () => fetchWords(), { immediate: true })
               :key="s"
               v-ripple
               type="button"
-              class="filter"
-              :class="{ 'filter--on': statuses.includes(s) }"
+              class="chip"
+              :class="{ 'chip--on': statuses.includes(s) }"
               :aria-pressed="statuses.includes(s)"
               @click="toggleStatus(s)"
           >
@@ -233,44 +223,11 @@ watch(libraryId, () => fetchWords(), { immediate: true })
   padding-bottom: 0.75rem;
 }
 
-.tools-toggle { position: relative; display: inline-flex; }
-.tools-dot {
-  position: absolute;
-  top: 0.625rem;
-  right: 0.625rem;
-  width: 0.5rem;
-  height: 0.5rem;
-  border-radius: 50%;
-  background: var(--primary);
-  pointer-events: none;
-}
-
 /* фильтры — 2×2, можно выбрать несколько */
 .filters {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.5rem;
-}
-
-.filter {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.25rem;
-  min-height: 2.5rem;
-  padding: 0 0.75rem;
-  border: 0;
-  border-radius: 0.625rem;
-  background: transparent;
-  box-shadow: inset 0 0 0 1px var(--outline);
-  font-size: 0.875rem;
-  font-weight: 500;
-  white-space: nowrap;
-}
-.filter--on {
-  background: var(--primary-c);
-  color: var(--on-primary-c);
-  box-shadow: none;
 }
 
 .summary {

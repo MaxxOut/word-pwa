@@ -143,6 +143,7 @@ watch(() => library.current?.id, load, { immediate: true })
   padding: 1rem 1.125rem;
   border-radius: 0.5rem;
   background: var(--container);
+  box-shadow: var(--shadow-card);
 }
 
 .label {
@@ -205,7 +206,7 @@ watch(() => library.current?.id, load, { immediate: true })
   display: flex;
   align-items: flex-end;
   gap: 3px;
-  height: 4.5rem;
+  height: 3rem;
   margin-top: 0.375rem;
 }
 .bar {

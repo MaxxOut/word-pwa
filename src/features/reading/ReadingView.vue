@@ -20,7 +20,7 @@ const topics = computed(() => {
 </script>
 
 <template>
-  <AppTopBar :title="t('reading.title')" />
+  <AppTopBar :title="t('reading.title')" :library="false" />
 
   <UiEmpty v-if="!topics.length" icon="reading" :title="t('reading.empty')" />
 

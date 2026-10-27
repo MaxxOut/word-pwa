@@ -1,12 +1,13 @@
 <script setup>
 import { useRouter } from 'vue-router'
+import { goBack } from '../utils/navigation.js'
 import AppLogo from './AppLogo.vue'
 import LibraryChip from './LibraryChip.vue'
 import UiIconButton from '../ui/UiIconButton.vue'
 
 // шапка экрана: логотип, заголовок (на главной — название приложения),
 // действия экрана (слот), чип библиотеки; слот below — прилипает вместе с шапкой
-const props = defineProps({
+defineProps({
   title:   { type: String,  default: '' },
   brand:   { type: Boolean, default: false },
   library: { type: Boolean, default: true },
@@ -15,17 +16,12 @@ const props = defineProps({
 })
 
 const router = useRouter()
-
-function goBack() {
-  if (window.history.state?.back) router.back()
-  else router.push(props.back)
-}
 </script>
 
 <template>
   <header class="top sticky-top">
     <div class="top-row">
-      <UiIconButton v-if="back" icon="back" class="back-btn" :label="$t('common.back')" @click="goBack" />
+      <UiIconButton v-if="back" icon="back" class="back-btn" :label="$t('common.back')" @click="goBack(router, back)" />
       <RouterLink v-else v-ripple :to="{ name: 'home' }" class="home-link" :aria-label="$t('nav.home')">
         <AppLogo />
       </RouterLink>

@@ -20,8 +20,8 @@ defineProps({
           v-ripple
           type="button"
           role="radio"
-          class="seg-item"
-          :class="{ 'seg-item--on': o.value === model }"
+          class="chip seg-item"
+          :class="{ 'chip--on': o.value === model }"
           :aria-checked="o.value === model"
           @click="model = o.value"
       >
@@ -41,27 +41,6 @@ defineProps({
   gap: 0.5rem;
 }
 
-.seg-item {
-  flex: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.375rem;
-  min-height: 2.5rem;
-  padding: 0 0.75rem;
-  border: 0;
-  border-radius: 0.625rem;
-  background: transparent;
-  box-shadow: inset 0 0 0 1px var(--outline);
-  font-size: 0.875rem;
-  font-weight: 500;
-  white-space: nowrap;
-  transition: background-color 0.15s;
-}
-.seg-item--on {
-  background: var(--primary-c);
-  color: var(--on-primary-c);
-  box-shadow: none;
-  font-weight: 600;
-}
+.seg-item { flex: 1; gap: 0.375rem; }
+.chip--on { font-weight: 600; }
 </style>

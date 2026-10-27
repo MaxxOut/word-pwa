@@ -6,6 +6,7 @@ import { reading as readingRepo } from '../../data/index.js'
 import { findText } from '../../content/reading/index.js'
 import { parseChapter, readPercent, chapterSizes } from '../../domain/reading.js'
 import { useSettingsStore } from '../../stores/settings.js'
+import { goBack } from '../../shared/utils/navigation.js'
 import UiIconButton from '../../shared/ui/UiIconButton.vue'
 import UiSheet from '../../shared/ui/UiSheet.vue'
 import WordPeek from './WordPeek.vue'
@@ -235,8 +236,7 @@ function toggleTheme() {
 }
 
 function back() {
-  if (window.history.state?.back) router.back()
-  else router.push({ name: 'reading-topic', params: { topic: text.topic } })
+  goBack(router, { name: 'reading-topic', params: { topic: text.topic } })
 }
 
 // экран повернули, сменили размер текста — пересчитать страницы, остаться на том же слове

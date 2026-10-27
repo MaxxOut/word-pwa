@@ -28,7 +28,7 @@ onBeforeUnmount(() => document.removeEventListener('click', onDocClick))
     <button
         v-ripple
         type="button"
-        class="chip"
+        class="lib-chip"
         :aria-label="t('library.choose', { lib: library.current && t(`libraries.${library.current.id}`) })"
         aria-haspopup="menu"
         :aria-expanded="open"
@@ -61,7 +61,7 @@ onBeforeUnmount(() => document.removeEventListener('click', onDocClick))
 <style scoped>
 .lib { position: relative; }
 
-.chip {
+.lib-chip {
   width: 2.5rem;
   height: 2.5rem;
   padding: 0;

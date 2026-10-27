@@ -31,32 +31,27 @@ function open() {
 <template>
   <section class="read">
     <div class="label">{{ last ? t('reading.continue') : t('reading.title') }}</div>
-    <div class="info">
-      <template v-if="last">
-        <b class="title">{{ last.text.title }}</b>
-        <span class="muted small">
-          {{ last.text.chapters[last.progress.chapter]?.title || last.text.level }} · {{ last.progress.percent }}%
-        </span>
-      </template>
-      <span v-else class="muted">{{ t('reading.start') }}</span>
-    </div>
-    <UiButton variant="outlined" @click="open">
+    <b v-if="last" class="title">{{ last.text.title }}</b>
+    <span v-if="last" class="muted small meta">
+      {{ last.text.chapters[last.progress.chapter]?.title || last.text.level }} · {{ last.progress.percent }}%
+    </span>
+    <span v-else class="muted meta">{{ t('reading.start') }}</span>
+    <UiButton variant="outlined" class="action" @click="open">
       {{ last ? t('reading.continueBtn') : t('reading.startBtn') }}
     </UiButton>
   </section>
 </template>
 
 <style scoped>
-/* как плитки главной: подпись сверху, текст и кнопка снизу */
+/* подпись, название и глава на всю ширину, кнопка под ними справа */
 .read {
   display: grid;
-  grid-template-columns: 1fr auto;
-  grid-template-areas: "label label" "info action";
-  align-items: end;
-  gap: 0.75rem 0.75rem;
+  grid-template-areas: "label" "title" "meta" "action";
+  gap: 0.25rem 0.75rem;
   padding: 1rem 1.125rem;
   border-radius: 0.5rem;
   background: var(--container);
+  box-shadow: var(--shadow-card);
 }
 
 .label {
@@ -66,18 +61,15 @@ function open() {
   color: var(--muted);
 }
 
-.info {
-  grid-area: info;
-  display: grid;
-  gap: 0.125rem;
-  min-width: 0;
-}
-
 .title {
+  grid-area: title;
   font-family: var(--font-title);
   font-size: 1.125rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.meta { grid-area: meta; min-width: 0; }
+.action { grid-area: action; justify-self: end; margin-top: 0.5rem; }
 </style>

@@ -7,7 +7,7 @@ import { LEVELS, readStatus } from '../../domain/reading.js'
 import { useLibraryStore } from '../../stores/library.js'
 import AppTopBar from '../../shared/components/AppTopBar.vue'
 import AppIcon from '../../shared/components/AppIcon.vue'
-import UiIconButton from '../../shared/ui/UiIconButton.vue'
+import UiFilterToggle from '../../shared/ui/UiFilterToggle.vue'
 import UiEmpty from '../../shared/ui/UiEmpty.vue'
 
 const props = defineProps({
@@ -64,18 +64,8 @@ const levelClass = level => `level--${level[0].toLowerCase()}`
 </script>
 
 <template>
-  <AppTopBar :title="t(`reading.topics.${topic}`)" :back="{ name: 'reading' }">
-    <span class="tools-toggle">
-      <UiIconButton
-          icon="filter"
-          :label="t('reading.filters')"
-          :variant="toolsOpen ? 'tonal' : 'standard'"
-          :aria-expanded="toolsOpen"
-          aria-controls="topic-tools"
-          @click="toolsOpen = !toolsOpen"
-      />
-      <span v-if="hasFilters && !toolsOpen" class="tools-dot" />
-    </span>
+  <AppTopBar :title="t(`reading.topics.${topic}`)" :back="{ name: 'reading' }" :library="false">
+    <UiFilterToggle v-model="toolsOpen" :label="t('reading.filters')" :active="hasFilters" controls="topic-tools" />
 
     <template #below>
       <div v-show="toolsOpen" id="topic-tools" class="tools">
@@ -140,38 +130,11 @@ const levelClass = level => `level--${level[0].toLowerCase()}`
   padding-bottom: 0.75rem;
 }
 
-.tools-toggle { position: relative; display: inline-flex; }
-.tools-dot {
-  position: absolute;
-  top: 0.625rem;
-  right: 0.625rem;
-  width: 0.5rem;
-  height: 0.5rem;
-  border-radius: 50%;
-  background: var(--primary);
-  pointer-events: none;
-}
-
 .chips {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
 }
-.chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  min-height: 2.25rem;
-  padding: 0 0.875rem;
-  border: 0;
-  border-radius: 0.625rem;
-  background: transparent;
-  box-shadow: inset 0 0 0 1px var(--outline);
-  font-size: 0.875rem;
-  font-weight: 500;
-}
-.chip--on { background: var(--primary-c); color: var(--on-primary-c); box-shadow: none; }
-
 .list {
   display: grid;
   gap: 0.375rem;
@@ -185,6 +148,7 @@ const levelClass = level => `level--${level[0].toLowerCase()}`
   padding: 0.875rem 1rem;
   border-radius: var(--radius-m);
   background: var(--container);
+  box-shadow: var(--shadow-card);
   color: inherit;
   text-decoration: none;
 }
