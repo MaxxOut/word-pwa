@@ -215,9 +215,12 @@ watch(libraryId, () => fetchWords(), { immediate: true })
     </div>
   </template>
 
-  <button v-ripple type="button" class="fab" :aria-label="t('words.add')" @click="wordDialog.open()">
-    <AppIcon name="add" size="1.75rem" />
-  </button>
+  <!-- в body: при сдвиге экрана (transform) position: fixed внутри него ломается -->
+  <Teleport to="body">
+    <button v-ripple type="button" class="fab" :aria-label="t('words.add')" @click="wordDialog.open()">
+      <AppIcon name="add" size="1.75rem" />
+    </button>
+  </Teleport>
 
   <WordDialog ref="wordDialog" :library-id="libraryId" :lang-code="langCode" @saved="onChanged" />
   <ImportDialog ref="importDialog" :library-id="libraryId" @imported="onChanged" />

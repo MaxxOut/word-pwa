@@ -3,25 +3,18 @@ import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import AppIcon from './AppIcon.vue'
 import AppLogo from './AppLogo.vue'
+import { NAV_ITEMS } from './navItems.js'
 
 // телефон — нижнее меню, широкий экран — боковая панель (rail)
 const route = useRoute()
 const { t } = useI18n()
-
-const ITEMS = [
-  { name: 'home',     icon: 'home' },
-  { name: 'words',    icon: 'words' },
-  { name: 'study',    icon: 'study' },
-  { name: 'repeat',   icon: 'repeat' },
-  { name: 'settings', icon: 'settings' },
-]
 </script>
 
 <template>
   <nav class="nav sticky-bottom" :aria-label="t('nav.label')">
     <AppLogo class="nav-logo" size="2.5rem" />
     <RouterLink
-        v-for="item in ITEMS"
+        v-for="item in NAV_ITEMS"
         :key="item.name"
         v-ripple
         :to="{ name: item.name }"
@@ -45,7 +38,7 @@ const ITEMS = [
   bottom: 0;
   z-index: 30;
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   background: var(--container);
 }
 

@@ -26,6 +26,7 @@ defineProps({
   border-radius: 0.5rem;
   background: var(--container);
   text-align: center;
+  animation: rise-in 0.3s ease-out;
 }
 
 .had-errors {

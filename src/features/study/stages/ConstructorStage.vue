@@ -18,7 +18,7 @@ const emit = defineEmits(['done', 'exit'])
 
 const { t } = useI18n()
 
-const { current, counter, progress, markError, fail, succeed, next: nextWord } =
+const { index, current, counter, progress, markError, fail, succeed, next: nextWord } =
   useStageQueue(props.words, errorIds => emit('done', errorIds))
 
 const assembled       = ref('')
@@ -103,7 +103,7 @@ initWord()
       @exit="$emit('exit')"
   />
 
-  <StageCard :had-errors="current.has_error">
+  <StageCard :key="index" :had-errors="current.has_error">
     <div class="muted">{{ current.translation?.join(', ') }}</div>
     <!-- места под буквы -->
     <div class="slots" :class="{ 'slots--done': completed }" aria-live="polite">

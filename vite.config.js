@@ -7,9 +7,10 @@ export default defineConfig({
   plugins: [
     vue(),
     VitePWA({
-      // новая версия ставится сама при следующем открытии
-      registerType: 'autoUpdate',
-      injectRegister: 'auto',
+      // новая версия ждёт: плашка «Обновить» на главной или следующий полный запуск.
+      // Регистрация — в shared/utils/update.js
+      registerType: 'prompt',
+      injectRegister: false,
       includeAssets: ['favicon.ico', 'icon.svg', 'apple-touch-icon-180x180.png'],
       manifest: {
         name: 'WordApp',

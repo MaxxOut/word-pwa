@@ -18,7 +18,7 @@ const emit = defineEmits(['done', 'exit'])
 
 const { t } = useI18n()
 
-const { current, isLast, counter, progress, fail, succeed, next: nextWord } =
+const { index, current, isLast, counter, progress, fail, succeed, next: nextWord } =
   useStageQueue(props.words, errorIds => emit('done', errorIds))
 
 const answer    = ref('')
@@ -72,7 +72,7 @@ nextTick(() => inputRef.value?.focus())
       @exit="$emit('exit')"
   />
 
-  <StageCard :had-errors="current.has_error">
+  <StageCard :key="index" :had-errors="current.has_error">
     <div class="muted small">{{ t('stages.enterWord') }}</div>
     <div class="prompt">{{ prompt }}</div>
     <div v-if="current.transcription" class="muted">[{{ current.transcription }}]</div>
@@ -129,6 +129,6 @@ nextTick(() => inputRef.value?.focus())
   padding: 0.75rem 1rem;
   border-radius: var(--radius-m);
 }
-.verdict--ok  { background: var(--success-c); color: var(--on-success-c); }
-.verdict--bad { background: var(--error-c);   color: var(--on-error-c); }
+.verdict--ok  { background: var(--success-c); color: var(--on-success-c); animation: pop 0.3s; }
+.verdict--bad { background: var(--error-c);   color: var(--on-error-c);   animation: shake 0.35s; }
 </style>

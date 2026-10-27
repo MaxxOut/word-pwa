@@ -4,8 +4,10 @@ import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { stats as statsRepo } from '../../data/index.js'
 import { useLibraryStore } from '../../stores/library.js'
+import { needRefresh, dismissed, applyUpdate, dismissUpdate } from '../../shared/utils/update.js'
 import AppTopBar from '../../shared/components/AppTopBar.vue'
 import UiButton from '../../shared/ui/UiButton.vue'
+import UiIconButton from '../../shared/ui/UiIconButton.vue'
 import UiEmpty from '../../shared/ui/UiEmpty.vue'
 import UiSpinner from '../../shared/ui/UiSpinner.vue'
 
@@ -30,6 +32,14 @@ watch(() => library.current?.id, load, { immediate: true })
 
 <template>
   <AppTopBar brand />
+
+  <Transition name="banner">
+    <section v-if="needRefresh && !dismissed" class="update" role="status">
+      <UiIconButton icon="close" :label="t('common.close')" @click="dismissUpdate" />
+      <span class="grow">{{ t('home.updateReady') }}</span>
+      <UiButton variant="filled" @click="applyUpdate">{{ t('home.update') }}</UiButton>
+    </section>
+  </Transition>
 
   <UiSpinner v-if="!stats" />
 
@@ -102,6 +112,20 @@ watch(() => library.current?.id, load, { immediate: true })
 </template>
 
 <style scoped>
+.update {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  padding: 0.5rem 0.5rem 0.5rem 0.25rem;
+  border-radius: 0.5rem;
+  background: var(--primary-c);
+  color: var(--on-primary-c);
+  font-weight: 500;
+}
+.banner-enter-active, .banner-leave-active { transition: opacity 0.25s, transform 0.25s; }
+.banner-enter-from, .banner-leave-to { opacity: 0; transform: translateY(-0.5rem); }
+
 .bento {
   display: grid;
   gap: 0.5rem;

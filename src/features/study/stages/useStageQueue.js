@@ -37,5 +37,5 @@ export function useStageQueue(words, onDone) {
     return true
   }
 
-  return { current, isLast, counter, progress, markError, fail, succeed, next }
+  return { index, current, isLast, counter, progress, markError, fail, succeed, next }
 }

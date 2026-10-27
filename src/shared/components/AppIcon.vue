@@ -7,7 +7,6 @@ import homeFill    from '@material-symbols/svg-400/rounded/home-fill.svg?raw'
 import words       from '@material-symbols/svg-400/rounded/dictionary.svg?raw'
 import wordsFill   from '@material-symbols/svg-400/rounded/dictionary-fill.svg?raw'
 import study       from '@material-symbols/svg-400/rounded/school.svg?raw'
-import studyFill   from '@material-symbols/svg-400/rounded/school-fill.svg?raw'
 import repeat      from '@material-symbols/svg-400/rounded/replay.svg?raw'
 import settings    from '@material-symbols/svg-400/rounded/settings.svg?raw'
 import settingsFill from '@material-symbols/svg-400/rounded/settings-fill.svg?raw'
@@ -40,8 +39,7 @@ import autoMode    from '@material-symbols/svg-400/rounded/brightness_auto.svg?r
 const ICONS = {
   home, 'home-fill': homeFill,
   words, 'words-fill': wordsFill,
-  study, 'study-fill': studyFill,
-  repeat, 'repeat-fill': repeat,
+  study, repeat,
   settings, 'settings-fill': settingsFill,
   add, edit, delete: del, back, close, speak,
   import: importIcon, export: exportIcon,

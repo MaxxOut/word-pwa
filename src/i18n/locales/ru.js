@@ -53,6 +53,8 @@ export default {
     untranslated: 'Без перевода',
   },
   home: {
+    updateReady: 'Доступна новая версия',
+    update:      'Обновить',
     empty:        'В библиотеке пока нет слов',
     emptyHint:    'Добавьте слова вручную или загрузите CSV-файл',
     addWords:     'Добавить слова',

@@ -19,7 +19,7 @@ const emit = defineEmits(['done', 'exit'])
 
 const { t } = useI18n()
 
-const { current, isLast, counter, progress, fail, succeed, next: nextWord } =
+const { index, current, isLast, counter, progress, fail, succeed, next: nextWord } =
   useStageQueue(props.words, errorIds => emit('done', errorIds))
 
 const answered = ref(false)
@@ -84,11 +84,11 @@ buildOptions()
       @exit="$emit('exit')"
   />
 
-  <StageCard :had-errors="current.has_error">
+  <StageCard :key="index" :had-errors="current.has_error">
     <div class="question-text">{{ question }}</div>
   </StageCard>
 
-  <div class="options">
+  <div :key="index" class="options">
     <button
         v-for="option in options"
         :key="option.value"
@@ -127,6 +127,7 @@ buildOptions()
 .options {
   display: grid;
   gap: 0.5rem;
+  animation: rise-in 0.3s 0.05s ease-out backwards;
 }
 
 .option {
@@ -145,7 +146,7 @@ buildOptions()
 }
 .option[aria-disabled="true"] { cursor: default; }
 
-.option--correct { background: var(--success-c); color: var(--on-success-c); box-shadow: none; }
-.option--wrong   { background: var(--error-c);   color: var(--on-error-c);   box-shadow: none; }
+.option--correct { background: var(--success-c); color: var(--on-success-c); box-shadow: none; animation: pop 0.3s; }
+.option--wrong   { background: var(--error-c);   color: var(--on-error-c);   box-shadow: none; animation: shake 0.35s; }
 .option--dim     { opacity: 0.5; }
 </style>

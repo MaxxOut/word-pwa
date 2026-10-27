@@ -7,6 +7,7 @@ import '@fontsource/montserrat-alternates/cyrillic-700.css'
 import App from './App.vue'
 import InstallView from './features/install/InstallView.vue'
 import { isStandalone, webAllowed } from './shared/utils/install.js'
+import { initUpdates } from './shared/utils/update.js'
 import router from './router/index.js'
 import { i18n } from './i18n/index.js'
 import { ripple } from './shared/ui/ripple.js'
@@ -16,6 +17,9 @@ import { useLibraryStore } from './stores/library.js'
 import './shared/styles/main.css'
 
 async function boot() {
+  // service worker нужен и экрану установки — без него браузер не предложит установить
+  initUpdates()
+
   // во вкладке браузера — только экран установки (тема и язык из настроек)
   if (!isStandalone && !webAllowed) {
     const app = createApp(InstallView)
