@@ -30,3 +30,46 @@ export function readStatus(progress) {
   if (!progress) return 'new'
   return progress.finished ? 'finished' : 'reading'
 }
+
+// ----- слово из текста -----
+
+const EDGE_PUNCT = /^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu
+
+// «"Grapes,» → «Grapes»: знаки по краям прочь, апостроф и дефис внутри остаются
+export function cleanToken(token) {
+  return token.replace(EDGE_PUNCT, '')
+}
+
+// кавычки прямой речи в примере только мешают — убираем все (апостроф ’ в don’t не трогаем)
+const QUOTES        = /["„“”«»]/g
+const SENTENCE_END  = /[.!?…]["„“”«»'‘’)]*$/
+const CLAUSE_END    = /[.!?…,;:]["„“”«»'‘’)]*$/
+const DASH          = /^[—–-]$/
+
+// пример к слову: предложение, если оно короткое; иначе — его кусок между знаками препинания;
+// кусок тоже длинный — '' (обрывок посреди фразы примером не годится).
+// tokens — слова абзаца, k — номер слова в абзаце
+export function exampleAround(tokens, k, max = 8) {
+  const span = (isEnd, from, to) => {
+    let start = k
+    while (start > from && !isEnd(tokens[start - 1])) start--
+    let end = k
+    while (end < to && !isEnd(tokens[end])) end++
+    if (DASH.test(tokens[start] ?? '') && start < k) start++
+    if (DASH.test(tokens[end] ?? '') && end > k) end--
+    return [start, end]
+  }
+
+  const [sStart, sEnd] = span(t => SENTENCE_END.test(t), 0, tokens.length - 1)
+  let [start, end] = [sStart, sEnd]
+
+  if (end - start + 1 > max) {
+    ;[start, end] = span(t => CLAUSE_END.test(t) || DASH.test(t), sStart, sEnd)
+  }
+  if (end - start + 1 > max) return ''
+
+  let text = tokens.slice(start, end + 1).join(' ').replace(QUOTES, '').replace(/^\(|\)$/g, '')
+  // кусок предложения — без запятой/двоеточия в конце
+  if (start !== sStart || end !== sEnd) text = text.replace(/[,;:—–-]+$/, '')
+  return text.trim()
+}

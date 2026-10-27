@@ -8,6 +8,7 @@ import { parseChapter, readPercent, chapterSizes } from '../../domain/reading.js
 import { useSettingsStore } from '../../stores/settings.js'
 import UiIconButton from '../../shared/ui/UiIconButton.vue'
 import UiSheet from '../../shared/ui/UiSheet.vue'
+import WordPeek from './WordPeek.vue'
 
 // книга: глава разбита на страницы CSS-колонками шириной в экран, лента колонок сдвигается.
 // Место чтения — номер первого слова на странице: после поворота экрана или смены шрифта
@@ -117,6 +118,7 @@ async function openChapter(index, word = 0) {
 }
 
 function go(target) {
+  peek.value?.close()
   if (target >= pages.value) {
     if (chapter.value < lastChapter.value) return openChapter(chapter.value + 1)
     return setOffset(0, true) // конец книги
@@ -163,6 +165,7 @@ function onTouchMove(e) {
   }
   if (!touch.horizontal) return
   e.preventDefault()
+  peek.value?.close()
   // дальше листать некуда — тянется с сопротивлением
   touch.dx = atEdge(mx < 0 ? 1 : -1) ? mx / 3 : mx
   setOffset(touch.dx)
@@ -178,11 +181,16 @@ function onTouchEnd(e) {
   else setOffset(0, true)
 }
 
-function onTap(e) {
-  const rect = viewport.value.getBoundingClientRect()
-  const x    = (e.clientX - rect.left) / rect.width
-  if (x < 0.3) go(page.value - 1)
-  else if (x > 0.7) go(page.value + 1)
+// нажатие на слово — шторка со словом (листание — только свайпом)
+const peek = ref(null)
+
+function onWordClick(e) {
+  const el = e.target.closest('.w')
+  if (!el) return
+  const i    = Number(el.dataset.i)
+  const para = paragraphs.value.find(p => p[0].i <= i && i <= p[p.length - 1].i)
+  if (!para) return
+  peek.value.open(el, para.map(w => w.t), i - para[0].i)
 }
 
 function onKey(e) {
@@ -251,6 +259,7 @@ onMounted(async () => {
     const size = `${Math.round(entry.contentRect.width)}x${Math.round(entry.contentRect.height)}`
     if (size === lastSize) return
     lastSize = size
+    peek.value?.close()
     layout(currentWord)
   })
   resizeObserver.observe(viewport.value)
@@ -297,11 +306,12 @@ onBeforeUnmount(() => {
         @touchmove="onTouchMove"
         @touchend="onTouchEnd"
         @touchcancel="onTouchEnd"
-        @click="onTap"
+        @click="onWordClick"
+        @scroll="viewport.scrollLeft = 0"
     >
       <article ref="flow" class="flow" :lang="text.library_id" :class="{ 'flow--ready': ready }">
         <p v-for="(para, pi) in paragraphs" :key="`${chapter}-${pi}`">
-          <template v-for="w in para" :key="w.i"><span class="w">{{ w.t }}</span>{{ ' ' }}</template>
+          <template v-for="w in para" :key="w.i"><span class="w" :data-i="w.i">{{ w.t }}</span>{{ ' ' }}</template>
         </p>
         <footer v-if="chapter === lastChapter" class="end">
           <div class="end-mark">{{ t('reading.end') }}</div>
@@ -313,6 +323,8 @@ onBeforeUnmount(() => {
     <footer class="reader-foot">
       <span class="num counter">{{ page + 1 }} / {{ pages }}</span>
     </footer>
+
+    <WordPeek ref="peek" :library-id="text.library_id" />
 
     <UiSheet v-model="contents" :title="t('reading.contents')">
       <ol class="toc">
@@ -412,6 +424,14 @@ onBeforeUnmount(() => {
 .flow--ready { visibility: visible; }
 
 .flow p { margin-bottom: 0.75em; }
+
+/* слово с открытым пузырём */
+.flow :deep(.w--on) {
+  border-radius: 0.25rem;
+  background: var(--primary-c);
+  color: var(--on-primary-c);
+  box-shadow: 0 0 0 0.125rem var(--primary-c);
+}
 
 .end {
   display: grid;

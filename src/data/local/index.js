@@ -129,6 +129,11 @@ const words = {
     return wordsOf(libraryId)
   },
 
+  // слово библиотеки без учёта регистра или null
+  async find(libraryId, text) {
+    return (await findDuplicate(libraryId, text)) ?? null
+  },
+
   async create(libraryId, data) {
     const text = data.word.trim()
     if (await findDuplicate(libraryId, text)) throw new DuplicateWordError(text)

@@ -35,3 +35,38 @@ describe('reading', () => {
     }
   })
 })
+
+describe('слово из текста', async () => {
+  const { cleanToken, exampleAround } = await import('../src/domain/reading.js')
+  const words = s => s.split(' ')
+
+  it('чистит знаки по краям', () => {
+    expect(cleanToken('"Grapes,')).toBe('Grapes')
+    expect(cleanToken("don't.")).toBe("don't")
+    expect(cleanToken('„Diese')).toBe('Diese')
+    expect(cleanToken('—')).toBe('')
+  })
+
+  it('короткое предложение — целиком', () => {
+    const t = words('The fox jumps. He cannot reach the grapes. He jumps again.')
+    expect(exampleAround(t, 5)).toBe('He cannot reach the grapes.')
+  })
+
+  it('длинное — кусок между запятыми', () => {
+    const t = words('The grapes are big, round and purple, and they look very sweet and juicy today.')
+    expect(exampleAround(t, 9)).toBe('and they look very sweet and juicy today.')
+    expect(exampleAround(t, 4)).toBe('round and purple')
+  })
+
+  it('длинный кусок — без примера', () => {
+    const t = words('one two three four five six seven eight nine ten eleven twelve')
+    expect(exampleAround(t, 10)).toBe('')
+  })
+
+  it('убирает кавычки прямой речи', () => {
+    const t = words('"I want those grapes," says the fox.')
+    expect(exampleAround(t, 3)).toBe('I want those grapes, says the fox.')
+    const d = words('„Diese Trauben will ich haben“, sagt der Fuchs.')
+    expect(exampleAround(d, 1)).toBe('Diese Trauben will ich haben, sagt der Fuchs.')
+  })
+})

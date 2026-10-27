@@ -155,8 +155,9 @@ watch(() => library.current?.id, load, { immediate: true })
 .tile--hero {
   grid-template-columns: 1fr auto;
   grid-template-areas: "label label" "value action";
-  align-items: end;
-  row-gap: 0.75rem;
+  align-items: center;
+  row-gap: 0.125rem;
+  padding-block: 0.75rem;
 }
 .tile--hero .label { grid-area: label; }
 .tile--hero .value { grid-area: value; font-size: 2.5rem; }
