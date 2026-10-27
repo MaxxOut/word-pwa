@@ -159,10 +159,8 @@ defineExpose({ open, close })
             <span class="box" :class="{ 'box--on': withExample }">
               <AppIcon v-if="withExample" name="check" size="1rem" />
             </span>
-            <span class="example-text">
-              <span class="muted small">{{ t('reading.addExample') }}</span>
-              <span class="small">{{ example }}</span>
-            </span>
+            <span class="muted small">{{ t('reading.addExample') }}</span>
+            <span class="example-text">{{ example }}</span>
           </label>
           <UiButton variant="filled" icon="add" type="submit" :loading="saving" block>
             {{ t('reading.addToDict') }}
@@ -184,7 +182,7 @@ defineExpose({ open, close })
   max-width: min(20rem, calc(100vw - 16px));
   padding: 0.75rem 1rem;
   border-radius: 0.875rem;
-  background: var(--surface);
+  background: var(--popover);
   box-shadow: 0 0.375rem 1.5rem rgb(0 0 0 / 0.22);
 }
 
@@ -234,9 +232,10 @@ defineExpose({ open, close })
 .error { color: var(--error); }
 
 .example {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.625rem;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 0.25rem 0.625rem;
   cursor: pointer;
 }
 .box {
@@ -245,12 +244,16 @@ defineExpose({ open, close })
   place-items: center;
   width: 1.25rem;
   height: 1.25rem;
-  margin-top: 0.125rem;
   border-radius: 0.3125rem;
   box-shadow: inset 0 0 0 2px var(--outline);
 }
 .box--on { background: var(--primary); color: var(--on-primary); box-shadow: none; }
-.example-text { display: grid; gap: 0.125rem; }
+/* пример — под подписью, с её отступом */
+.example-text {
+  grid-column: 2;
+  font-size: 0.9375rem;
+  line-height: 1.35;
+}
 
 .bubble-enter-active, .bubble-leave-active { transition: opacity 0.15s, transform 0.15s; }
 .bubble-enter-from, .bubble-leave-to { opacity: 0; transform: scale(0.96); }
