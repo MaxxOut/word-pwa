@@ -42,7 +42,8 @@ function onAfterEnter() {
     <div class="pages">
       <RouterView v-slot="{ Component, route: r }">
         <Transition :name="transition" @before-leave="onBeforeLeave" @after-enter="onAfterEnter">
-          <div :key="r.name" class="page">
+          <!-- ключ — экран; у книги ещё и её id, иначе из книги в книгу экран не пересоздастся -->
+        <div :key="r.params.id ? `${r.name}-${r.params.id}` : r.name" class="page">
             <component :is="Component" />
           </div>
         </Transition>

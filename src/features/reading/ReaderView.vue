@@ -284,19 +284,22 @@ onBeforeUnmount(() => {
           <template v-if="chapterTitle"> · {{ chapterTitle }}</template>
         </div>
       </div>
-      <UiIconButton :icon="isDark ? 'light' : 'dark'" :label="t('reading.theme')" @click="toggleTheme" />
+    </header>
+
+    <!-- прогресс книги и рядом — оглавление -->
+    <div class="progress-row">
+      <div class="book-progress" role="progressbar" :aria-valuenow="bookPercent" aria-valuemin="0" aria-valuemax="100">
+        <span v-for="(s, i) in segments" :key="i" class="seg" :style="{ flexGrow: s.width }">
+          <span class="seg-fill" :style="{ width: `${s.fill}%` }" />
+        </span>
+      </div>
       <UiIconButton
           v-if="text.chapters.length > 1"
           icon="toc"
+          class="toc-btn"
           :label="t('reading.contents')"
           @click="contents = true"
       />
-    </header>
-
-    <div class="book-progress" role="progressbar" :aria-valuenow="bookPercent" aria-valuemin="0" aria-valuemax="100">
-      <span v-for="(s, i) in segments" :key="i" class="seg" :style="{ flexGrow: s.width }">
-        <span class="seg-fill" :style="{ width: `${s.fill}%` }" />
-      </span>
     </div>
 
     <div
@@ -320,7 +323,14 @@ onBeforeUnmount(() => {
       </article>
     </div>
 
+    <!-- слева тема, по центру страницы -->
     <footer class="reader-foot">
+      <UiIconButton
+          class="theme-btn"
+          :icon="isDark ? 'light' : 'dark'"
+          :label="t('reading.theme')"
+          @click="toggleTheme"
+      />
       <span class="num counter">{{ page + 1 }} / {{ pages }}</span>
     </footer>
 
@@ -357,7 +367,7 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 0.25rem;
   margin: 0 -0.5rem;
-  padding: 0.5rem 0;
+  padding: 0.5rem 0 0;
 }
 
 .heading {
@@ -379,10 +389,20 @@ onBeforeUnmount(() => {
 .chapter-no { font-weight: 600; color: var(--on); }
 
 /* как полоса в занятии; зазор между отрезками отмечает границы глав */
+.progress-row {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  /* высота как у кнопки оглавления — без глав отступ до текста тот же */
+  min-height: var(--touch);
+  margin-bottom: 0.25rem;
+}
+.toc-btn { margin-right: -0.5rem; }
+
 .book-progress {
+  flex: 1;
   display: flex;
   gap: 3px;
-  margin-bottom: 0.75rem;
 }
 .seg {
   flex-basis: 0;
@@ -448,10 +468,12 @@ onBeforeUnmount(() => {
 }
 
 .reader-foot {
-  display: flex;
-  justify-content: center;
-  padding: 0.5rem 0 calc(0.75rem + env(safe-area-inset-bottom));
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  padding: 0.25rem 0 calc(0.25rem + env(safe-area-inset-bottom));
 }
+.theme-btn { justify-self: start; margin-left: -0.5rem; }
 .counter {
   font-size: 0.875rem;
   color: var(--muted);
