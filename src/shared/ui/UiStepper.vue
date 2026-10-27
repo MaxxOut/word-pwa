@@ -9,10 +9,11 @@ const props = defineProps({
   hint:  { type: String, default: '' },
   min:   { type: Number, default: 0 },
   max:   { type: Number, default: 100 },
+  step:  { type: Number, default: 1 },
 })
 
-function step(delta) {
-  model.value = Math.min(props.max, Math.max(props.min, model.value + delta))
+function change(dir) {
+  model.value = Math.min(props.max, Math.max(props.min, model.value + dir * props.step))
 }
 </script>
 
@@ -23,9 +24,9 @@ function step(delta) {
       <span v-if="hint" class="stepper-hint">{{ hint }}</span>
     </div>
     <div class="stepper">
-      <UiIconButton icon="minus" :label="$t('common.less')" :disabled="model <= min" @click="step(-1)" />
+      <UiIconButton icon="minus" :label="$t('common.less')" :disabled="model <= min" @click="change(-1)" />
       <span class="num value">{{ model }}</span>
-      <UiIconButton icon="add" :label="$t('common.more')" :disabled="model >= max" @click="step(1)" />
+      <UiIconButton icon="add" :label="$t('common.more')" :disabled="model >= max" @click="change(1)" />
     </div>
   </div>
 </template>

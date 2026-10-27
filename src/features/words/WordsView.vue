@@ -67,7 +67,7 @@ async function fetchWords(more = false) {
       page:    nextPage,
       perPage: PAGE,
       search:  search.value,
-      // игнорируемые — только если их фильтр включён
+      // «Знаю» — только если их фильтр включён
       statuses: statuses.value.length ? statuses.value : FILTERS.filter(s => s !== STATUS.IGNORED),
       sort:     SORTS[sort.value].field,
       sortDir:  SORTS[sort.value].dir,

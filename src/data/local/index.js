@@ -248,7 +248,7 @@ function progressFrom(p, now) {
     is_learned:  p.is_learned,
     is_ignored:  p.is_ignored,
     learned_at:  p.is_learned ? (p.learned_at ?? now) : null,
-    repeated_at: p.is_learned ? p.repeated_at : null,
+    repeated_at: p.is_learned || p.is_ignored ? p.repeated_at : null,
   }
 }
 
@@ -295,9 +295,9 @@ const repeat = {
     const now = nowIso()
     await db.transaction('rw', db.words, db.sessions, async () => {
       await db.words.where('id').anyOf(repeatedIds).modify({ repeated_at: now, updated_at: now })
-      // проваленные — обратно в невыученные
+      // проваленные — обратно в невыученные (и «Знаю» тоже — значит, не так уж и знаю)
       await db.words.where('id').anyOf(failedIds).modify({
-        is_learned: false, learned_at: null, repeated_at: null, updated_at: now,
+        is_learned: false, is_ignored: false, learned_at: null, repeated_at: null, updated_at: now,
       })
       await addToSession(libraryId, 'words_repeated', repeatedIds.length)
     })

@@ -2,6 +2,9 @@
 
 import { daysAgo } from './dates.js'
 
+// IGNORED в интерфейсе — «Знаю»: слова, которые и так хорошо знаешь (cat, dog).
+// Не учатся, повторяются редко — раз в repeat.days_known дней. Ключ и поле is_ignored
+// оставлены прежними — так совместимы старые базы и CSV
 export const STATUS = {
   NEW:          'new',
   LEARNED:      'learned',
@@ -41,18 +44,25 @@ export function pickForStudy(words, limit = 50) {
     .slice(0, limit)
 }
 
-// варианты-«отвлекалки» для тестов: выученные с переводом
+// варианты-«отвлекалки» для тестов: выученные и «знаю» с переводом
 export function pickExtra(words, excludeIds = [], limit = 20) {
   const exclude = new Set(excludeIds)
   return shuffle(
-    words.filter(w => w.is_learned && hasTranslation(w) && !exclude.has(w.id)),
+    words.filter(w => (w.is_learned || w.is_ignored) && hasTranslation(w) && !exclude.has(w.id)),
   ).slice(0, limit)
 }
 
-// пора ли повторять: не повторялось — с изучения прошло N дней, иначе — с повторения M дней
+// с чего отсчитывать повторение слова
+const repeatBase = w => w.repeated_at ?? w.learned_at ?? w.updated_at ?? w.created_at
+
+// пора ли повторять: не повторялось — с изучения прошло N дней, иначе — с повторения M дней.
+// «Знаю» — раз в K дней с последнего повторения (или с отметки), только с переводом
 export function isDue(word, repeatSettings, now = new Date()) {
-  if (!word.is_learned || word.is_ignored) return false
-  const { days_after_learning, days_after_repeat } = repeatSettings
+  const { days_after_learning, days_after_repeat, days_known } = repeatSettings
+  if (word.is_ignored) {
+    return hasTranslation(word) && new Date(repeatBase(word)) <= daysAgo(days_known ?? 20, now)
+  }
+  if (!word.is_learned) return false
   if (!word.repeated_at) {
     return !!word.learned_at && new Date(word.learned_at) <= daysAgo(days_after_learning, now)
   }
@@ -62,9 +72,7 @@ export function isDue(word, repeatSettings, now = new Date()) {
 // слова к повторению — давно не виденные сначала
 export function pickForRepeat(words, repeatSettings, now = new Date()) {
   const due = words.filter(w => isDue(w, repeatSettings, now))
-  due.sort((a, b) =>
-    (a.repeated_at ?? a.learned_at).localeCompare(b.repeated_at ?? b.learned_at),
-  )
+  due.sort((a, b) => repeatBase(a).localeCompare(repeatBase(b)))
   return {
     total: due.length,
     words: due.slice(0, repeatSettings.words_per_session),

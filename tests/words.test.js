@@ -62,7 +62,7 @@ describe('isDue / pickForRepeat', () => {
     expect(isDue(w({ is_learned: true, learned_at: learned, repeated_at: daysBefore(4) }), RS, NOW)).toBe(false)
   })
 
-  it('not learned or ignored words are never due', () => {
+  it('not learned words are never due; «Знаю» — not before days_known', () => {
     expect(isDue(w({ learned_at: daysBefore(10) }), RS, NOW)).toBe(false)
     expect(isDue(w({ is_learned: true, is_ignored: true, learned_at: daysBefore(10) }), RS, NOW)).toBe(false)
   })
@@ -85,10 +85,28 @@ describe('libraryStats', () => {
     const stats = libraryStats([
       w({ word: 'a' }),
       w({ word: 'b', translation: [] }),
-      w({ word: 'c', is_ignored: true }),
+      w({ word: 'c', is_ignored: true }), // «Знаю», отмечено давно — пора повторить
       w({ word: 'd', is_learned: true, learned_at: daysBefore(3) }),
       w({ word: 'e', is_learned: true, learned_at: daysBefore(1) }),
     ], RS, NOW)
-    expect(stats).toEqual({ words: 5, learned: 2, ignored: 1, untranslated: 1, new: 1, due: 1 })
+    expect(stats).toEqual({ words: 5, learned: 2, ignored: 1, untranslated: 1, new: 1, due: 2 })
+  })
+})
+
+describe('слова «Знаю»', () => {
+  const RSK = { ...RS, days_known: 20 }
+
+  it('повторяются раз в days_known дней с последнего повторения или отметки', () => {
+    expect(isDue(w({ is_ignored: true, updated_at: daysBefore(20) }), RSK, NOW)).toBe(true)
+    expect(isDue(w({ is_ignored: true, updated_at: daysBefore(19) }), RSK, NOW)).toBe(false)
+    expect(isDue(w({ is_ignored: true, updated_at: daysBefore(40), repeated_at: daysBefore(5) }), RSK, NOW)).toBe(false)
+  })
+
+  it('без перевода не повторяются', () => {
+    expect(isDue(w({ is_ignored: true, translation: [], updated_at: daysBefore(40) }), RSK, NOW)).toBe(false)
+  })
+
+  it('идут в отвлекалки', () => {
+    expect(pickExtra([w({ word: 'cat', is_ignored: true })]).map(x => x.id)).toEqual(['cat'])
   })
 })

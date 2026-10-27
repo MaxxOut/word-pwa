@@ -183,6 +183,14 @@ async function wipeAll() {
           :min="1"
           :max="60"
       />
+      <UiStepper
+          v-model="form.repeat.days_known"
+          :label="t('settings.daysKnown')"
+          :hint="t('settings.daysKnownHint', { n: form.repeat.days_known })"
+          :min="5"
+          :max="90"
+          :step="5"
+      />
       <h4 class="sub">{{ t('settings.stages') }}</h4>
       <UiSwitch
           v-for="s in REPEAT_STAGES"
