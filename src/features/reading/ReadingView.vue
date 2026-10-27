@@ -32,9 +32,11 @@ const topics = computed(() => {
         class="topic"
         :to="{ name: 'reading-topic', params: { topic: topic.id } }"
     >
-      <span class="topic-icon"><AppIcon :name="topic.icon" size="1.75rem" /></span>
+      <span class="topic-head">
+        <span class="topic-icon"><AppIcon :name="topic.icon" size="1.75rem" /></span>
+        <span class="num topic-count" :aria-label="t('reading.texts', { n: topic.count })">{{ topic.count }}</span>
+      </span>
       <span class="topic-title">{{ t(`reading.topics.${topic.id}`) }}</span>
-      <span class="muted small">{{ t('reading.texts', { n: topic.count }) }}</span>
     </RouterLink>
   </div>
 </template>
@@ -53,9 +55,22 @@ const topics = computed(() => {
   min-height: 8rem;
   padding: 1rem 1.125rem;
   border-radius: 0.5rem;
-  background: var(--container);
-  color: inherit;
+  /* цвет текущей библиотеки, как плитка «Учить» на главной */
+  background: var(--primary-c);
+  color: var(--on-primary-c);
   text-decoration: none;
+}
+
+.topic-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.topic-count {
+  font-size: 1.75rem;
+  opacity: 0.75;
 }
 
 .topic-icon {
@@ -63,10 +78,9 @@ const topics = computed(() => {
   place-items: center;
   width: 3rem;
   height: 3rem;
-  margin-bottom: 0.5rem;
   border-radius: 0.75rem;
-  background: var(--primary-c);
-  color: var(--on-primary-c);
+  background: var(--primary);
+  color: var(--on-primary);
 }
 
 .topic-title {
