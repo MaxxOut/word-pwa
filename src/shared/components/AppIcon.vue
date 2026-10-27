@@ -10,6 +10,12 @@ import study       from '@material-symbols/svg-400/rounded/school.svg?raw'
 import repeat      from '@material-symbols/svg-400/rounded/replay.svg?raw'
 import settings    from '@material-symbols/svg-400/rounded/settings.svg?raw'
 import settingsFill from '@material-symbols/svg-400/rounded/settings-fill.svg?raw'
+import reading     from '@material-symbols/svg-400/rounded/menu_book.svg?raw'
+import readingFill from '@material-symbols/svg-400/rounded/menu_book-fill.svg?raw'
+import castle      from '@material-symbols/svg-400/rounded/castle.svg?raw'
+import science     from '@material-symbols/svg-400/rounded/science.svg?raw'
+import coffee      from '@material-symbols/svg-400/rounded/coffee.svg?raw'
+import toc         from '@material-symbols/svg-400/rounded/toc.svg?raw'
 import add         from '@material-symbols/svg-400/rounded/add.svg?raw'
 import edit        from '@material-symbols/svg-400/rounded/edit.svg?raw'
 import del         from '@material-symbols/svg-400/rounded/delete.svg?raw'
@@ -40,6 +46,8 @@ const ICONS = {
   home, 'home-fill': homeFill,
   words, 'words-fill': wordsFill,
   study, repeat,
+  reading, 'reading-fill': readingFill,
+  castle, science, coffee, toc,
   settings, 'settings-fill': settingsFill,
   add, edit, delete: del, back, close, speak,
   import: importIcon, export: exportIcon,

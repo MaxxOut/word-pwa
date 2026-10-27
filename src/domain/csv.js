@@ -77,16 +77,15 @@ function escape(value) {
 }
 
 // BOM — чтобы Excel открыл UTF-8 без кракозябр
-export function stringifyWordsCsv(words) {
+// progress: false — только 4 колонки слова (например, отдать ИИ заполнить переводы):
+// при импорте с заменой прогресс слов тогда не трогается
+export function stringifyWordsCsv(words, { progress = true } = {}) {
   const lines = words.map(w => [
     w.word,
     (w.translation ?? []).join(LIST),
     w.transcription ?? '',
     (w.examples ?? []).join(LIST),
-    statusOf(w),
-    w.learned_at ?? '',
-    w.repeated_at ?? '',
-    w.created_at ?? '',
+    ...(progress ? [statusOf(w), w.learned_at ?? '', w.repeated_at ?? '', w.created_at ?? ''] : []),
   ].map(escape).join(SEP))
   return BOM + lines.join('\r\n') + '\r\n'
 }

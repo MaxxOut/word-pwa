@@ -17,6 +17,11 @@ db.version(1).stores({
   meta:      'key', // настройки и служебные значения
 })
 
+// место чтения встроенных текстов: одна запись на текст
+db.version(2).stores({
+  reading: 'text_id, library_id',
+})
+
 // при первом запуске (и после очистки) — создать библиотеки
 db.on('ready', async () => {
   const existing = await db.libraries.toCollection().primaryKeys()

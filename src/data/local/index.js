@@ -318,6 +318,31 @@ const stats = {
   },
 }
 
+// ----- чтение -----
+
+const reading = {
+  get(textId) {
+    return db.reading.get(textId)
+  },
+
+  all(libraryId) {
+    return db.reading.where('library_id').equals(libraryId).toArray()
+  },
+
+  // последний открытый текст библиотеки
+  async last(libraryId) {
+    const list = await reading.all(libraryId)
+    return list.sort((a, b) => b.updated_at.localeCompare(a.updated_at))[0] ?? null
+  },
+
+  // { text_id, library_id, chapter, word, percent, finished }
+  async save(progress) {
+    const row = { ...progress, updated_at: nowIso() }
+    await db.reading.put(row)
+    return row
+  },
+}
+
 // ----- обслуживание -----
 
 const maintenance = {
@@ -333,4 +358,4 @@ const maintenance = {
   },
 }
 
-export default { settings, libraries, words, study, repeat, stats, maintenance }
+export default { settings, libraries, words, study, repeat, stats, reading, maintenance }

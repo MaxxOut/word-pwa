@@ -3,6 +3,7 @@ import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { libraries as librariesRepo, words as wordsRepo, maintenance } from '../../data/index.js'
 import { stringifyWordsCsv } from '../../domain/csv.js'
+import { STATUS, wordStatus } from '../../domain/words.js'
 import { downloadText } from '../../shared/utils/browser.js'
 import { useSettingsStore } from '../../stores/settings.js'
 import { useLibraryStore } from '../../stores/library.js'
@@ -78,6 +79,18 @@ async function exportWords() {
   const all = await wordsRepo.all(id)
   all.sort((a, b) => a.word.localeCompare(b.word))
   downloadText(`words_${id}_${new Date().toISOString().slice(0, 10)}.csv`, stringifyWordsCsv(all))
+}
+
+// слова без перевода — отдать ИИ заполнить и импортировать обратно с заменой
+async function exportUntranslated() {
+  const id   = library.current.id
+  const list = (await wordsRepo.all(id)).filter(w => wordStatus(w) === STATUS.UNTRANSLATED)
+  if (!list.length) return toast(t('settings.noUntranslated'))
+  list.sort((a, b) => a.word.localeCompare(b.word))
+  downloadText(
+    `untranslated_${id}_${new Date().toISOString().slice(0, 10)}.csv`,
+    stringifyWordsCsv(list, { progress: false }),
+  )
 }
 
 async function resetProgress() {
@@ -198,6 +211,20 @@ async function wipeAll() {
             icon="export"
             :disabled="!library.current?.words_count"
             @click="exportWords"
+        >
+          {{ t('words.export') }}
+        </UiButton>
+      </div>
+      <div class="action">
+        <div class="grow">
+          <div>{{ t('settings.exportUntranslated', { lib: libName }) }}</div>
+          <div class="muted small">{{ t('settings.exportUntranslatedHint') }}</div>
+        </div>
+        <UiButton
+            variant="outlined"
+            icon="export"
+            :disabled="!library.current?.words_count"
+            @click="exportUntranslated"
         >
           {{ t('words.export') }}
         </UiButton>

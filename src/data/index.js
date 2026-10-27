@@ -7,5 +7,5 @@ import local from './local/index.js'
 
 const repo = local
 
-export const { settings, libraries, words, study, repeat, stats, maintenance } = repo
+export const { settings, libraries, words, study, repeat, stats, reading, maintenance } = repo
 export { DuplicateWordError, NotFoundError } from './errors.js'

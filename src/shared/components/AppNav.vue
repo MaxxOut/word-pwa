@@ -38,7 +38,7 @@ const { t } = useI18n()
   bottom: 0;
   z-index: 30;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   background: var(--container);
 }
 

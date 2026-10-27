@@ -6,6 +6,7 @@ import { stats as statsRepo } from '../../data/index.js'
 import { useLibraryStore } from '../../stores/library.js'
 import { needRefresh, dismissed, applyUpdate, dismissUpdate } from '../../shared/utils/update.js'
 import AppTopBar from '../../shared/components/AppTopBar.vue'
+import ContinueReading from '../reading/ContinueReading.vue'
 import UiButton from '../../shared/ui/UiButton.vue'
 import UiIconButton from '../../shared/ui/UiIconButton.vue'
 import UiEmpty from '../../shared/ui/UiEmpty.vue'
@@ -66,6 +67,8 @@ watch(() => library.current?.id, load, { immediate: true })
       </UiButton>
     </section>
 
+    <ContinueReading />
+
     <section class="tile tile--progress">
       <div
           class="ring"
@@ -109,6 +112,9 @@ watch(() => library.current?.id, load, { immediate: true })
       </div>
     </section>
   </div>
+
+  <!-- слов ещё нет — чтение всё равно доступно -->
+  <ContinueReading v-if="stats && !stats.words" />
 </template>
 
 <style scoped>

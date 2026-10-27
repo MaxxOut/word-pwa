@@ -1,6 +1,7 @@
 // символ | в vue-i18n разделяет формы множественного числа — в тексте писать {'|'}
 export default {
   common: {
+    back:    'Назад',
     yes:     'Так',
     no:      'Ні',
     save:    'Зберегти',
@@ -37,6 +38,7 @@ export default {
     words:    'Слова',
     study:    'Вчити',
     repeat:   'Повтор',
+    reading:  'Читання',
     settings: 'Параметри',
   },
   library: {
@@ -171,6 +173,40 @@ export default {
     correct:          'Правильно!',
     correctAnswer:    'Правильна відповідь:',
   },
+  reading: {
+    title:       'Читання',
+    texts:       'Текстів: {n}',
+    chapters:    'Розділів: {n}',
+    empty:       'Для цієї бібліотеки поки немає текстів',
+    status: {
+      new:      'Новий',
+      reading:  '{n}%',
+      finished: 'Прочитано',
+    },
+    sorts: {
+      levelAsc:  'Спершу легкі',
+      levelDesc: 'Спершу складні',
+      new:       'Спершу нові',
+    },
+    filters:     'Фільтри',
+    level:       'Рівень',
+    sort:        'Сортування',
+    nothing:     'Нічого не знайдено',
+    chapterOf:   'Розділ {n} з {total}',
+    contents:    'Зміст',
+    theme:       'Змінити тему',
+    source:      'Джерело: {s}',
+    end:         'Кінець',
+    continue:    'Продовжити читання',
+    continueBtn: 'Продовжити',
+    start:       'Виберіть текст для читання',
+    startBtn:    'Читати',
+    topics: {
+      tales:   'Казки та байки',
+      science: 'Наука і техніка',
+      life:    'Життя і люди',
+    },
+  },
   settings: {
     title:                 'Параметри',
     interface:             'Інтерфейс',
@@ -196,6 +232,9 @@ export default {
     importHint:            'Додати слова з CSV-файлу',
     exportWords:           'Експорт слів ({lib})',
     exportHint:            'Усі слова з прогресом у CSV — резервна копія',
+    exportUntranslated:     'Слова без перекладу ({lib})',
+    exportUntranslatedHint: 'CSV для заповнення (наприклад, ШІ). Потім імпорт із «Замінити» — прогрес не постраждає',
+    noUntranslated:         'Слів без перекладу немає',
     resetProgress:         'Скинути прогрес ({lib})',
     resetProgressHint:     'Слова залишаться, позначки «вивчено» та історія обнуляться',
     resetProgressConfirm:  'Скинути прогрес бібліотеки {lib}? Це не можна скасувати.',

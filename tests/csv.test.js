@@ -66,3 +66,13 @@ describe('stringifyWordsCsv', () => {
     expect(rows[1].progress).toMatchObject({ is_learned: false, is_ignored: true })
   })
 })
+
+describe('stringifyWordsCsv без прогресса', () => {
+  it('пишет только 4 колонки, и импорт не видит прогресса', async () => {
+    const { stringifyWordsCsv, parseWordsCsv } = await import('../src/domain/csv.js')
+    const csv = stringifyWordsCsv([{ word: 'peep', translation: [], transcription: '', examples: ['He peeped in.'], is_learned: true }], { progress: false })
+    expect(csv.trim().replace('﻿', '')).toBe('peep;;;He peeped in.')
+    const rows = parseWordsCsv(csv)
+    expect(rows[0].progress).toBeFalsy()
+  })
+})

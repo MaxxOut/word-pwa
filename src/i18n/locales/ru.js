@@ -1,6 +1,7 @@
 // символ | в vue-i18n разделяет формы множественного числа — в тексте писать {'|'}
 export default {
   common: {
+    back:    'Назад',
     yes:     'Да',
     no:      'Нет',
     save:    'Сохранить',
@@ -37,6 +38,7 @@ export default {
     words:    'Слова',
     study:    'Учить',
     repeat:   'Повторять',
+    reading:  'Чтение',
     settings: 'Настройки',
   },
   library: {
@@ -171,6 +173,40 @@ export default {
     correct:          'Верно!',
     correctAnswer:    'Правильный ответ:',
   },
+  reading: {
+    title:       'Чтение',
+    texts:       'Текстов: {n}',
+    chapters:    'Глав: {n}',
+    empty:       'Для этой библиотеки пока нет текстов',
+    status: {
+      new:      'Новый',
+      reading:  '{n}%',
+      finished: 'Прочитан',
+    },
+    sorts: {
+      levelAsc:  'Сначала лёгкие',
+      levelDesc: 'Сначала сложные',
+      new:       'Сначала новые',
+    },
+    filters:     'Фильтры',
+    level:       'Уровень',
+    sort:        'Сортировка',
+    nothing:     'Ничего не найдено',
+    chapterOf:   'Глава {n} из {total}',
+    contents:    'Содержание',
+    theme:       'Сменить тему',
+    source:      'Источник: {s}',
+    end:         'Конец',
+    continue:    'Продолжить чтение',
+    continueBtn: 'Продолжить',
+    start:       'Выберите текст для чтения',
+    startBtn:    'Читать',
+    topics: {
+      tales:   'Сказки и басни',
+      science: 'Наука и техника',
+      life:    'Жизнь и люди',
+    },
+  },
   settings: {
     title:                 'Настройки',
     interface:             'Интерфейс',
@@ -196,6 +232,9 @@ export default {
     importHint:            'Добавить слова из CSV-файла',
     exportWords:           'Экспорт слов ({lib})',
     exportHint:            'Все слова с прогрессом в CSV — резервная копия',
+    exportUntranslated:     'Слова без перевода ({lib})',
+    exportUntranslatedHint: 'CSV для заполнения (например, ИИ). Затем импорт с «Заменить» — прогресс не пострадает',
+    noUntranslated:         'Слов без перевода нет',
     resetProgress:         'Сбросить прогресс ({lib})',
     resetProgressHint:     'Слова останутся, отметки «выучено» и история обнулятся',
     resetProgressConfirm:  'Сбросить прогресс библиотеки {lib}? Это нельзя отменить.',
