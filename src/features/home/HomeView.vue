@@ -129,13 +129,13 @@ watch(() => library.current?.id, load, { immediate: true })
   row-gap: 0.75rem;
 }
 .tile--hero .label { grid-area: label; }
-.tile--hero .value { grid-area: value; font-size: 3.5rem; }
+.tile--hero .value { grid-area: value; font-size: 2.5rem; }
 .tile--hero > :last-child { grid-area: action; }
 .tile--learn  { background: var(--primary-c); color: var(--on-primary-c); }
 .tile--learn .label { color: inherit; opacity: 0.8; }
 .tile--repeat { background: var(--container-hi); }
 
-.value { font-size: 2.5rem; }
+.value { font-size: 2rem; }
 
 .tile--progress {
   grid-template-columns: auto 1fr;

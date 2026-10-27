@@ -48,14 +48,14 @@ defineProps({
   place-items: center;
   width: var(--touch);
   height: var(--touch);
-  margin-left: -0.5rem;
+  /* зона нажатия шире логотипа — заголовок подтягиваем ближе */
+  margin: 0 -0.25rem 0 -0.5rem;
   border-radius: 50%;
 }
 
 .top-title {
   flex: 1;
   min-width: 0;
-  margin-left: 0.25rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

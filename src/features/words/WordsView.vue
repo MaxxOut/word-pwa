@@ -4,9 +4,8 @@ import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { words as wordsRepo } from '../../data/index.js'
 import { STATUS, wordStatus } from '../../domain/words.js'
-import { stringifyWordsCsv } from '../../domain/csv.js'
 import { useLibraryStore } from '../../stores/library.js'
-import { downloadText, speak, canSpeak } from '../../shared/utils/browser.js'
+import { speak, canSpeak } from '../../shared/utils/browser.js'
 import { toast } from '../../shared/ui/feedback.js'
 import AppTopBar from '../../shared/components/AppTopBar.vue'
 import AppIcon from '../../shared/components/AppIcon.vue'
@@ -44,10 +43,10 @@ const importDialog = ref(null)
 const FILTERS = [STATUS.NEW, STATUS.LEARNED, STATUS.UNTRANSLATED, STATUS.IGNORED]
 
 const SORTS = {
-  alpha:     { field: 'word',       dir: 'asc',  letter: 'A', arrow: 'south' },
-  alphaDesc: { field: 'word',       dir: 'desc', letter: 'Z', arrow: 'south' },
-  new:       { field: 'created_at', dir: 'desc', icon: 'schedule',      arrow: 'south' },
-  old:       { field: 'created_at', dir: 'asc',  icon: 'schedule',      arrow: 'north' },
+  alpha:     { field: 'word',       dir: 'asc',  letter: 'A',      arrow: 'south' },
+  alphaDesc: { field: 'word',       dir: 'desc', letter: 'Z',      arrow: 'south' },
+  new:       { field: 'created_at', dir: 'desc', icon: 'schedule', arrow: 'south' },
+  old:       { field: 'created_at', dir: 'asc',  icon: 'schedule', arrow: 'north' },
 }
 
 const hasFilters = computed(() => !!search.value.trim() || statuses.value.length > 0)
@@ -68,7 +67,8 @@ async function fetchWords(more = false) {
       page:    nextPage,
       perPage: PAGE,
       search:  search.value,
-      statuses: statuses.value,
+      // игнорируемые — только если их фильтр включён
+      statuses: statuses.value.length ? statuses.value : FILTERS.filter(s => s !== STATUS.IGNORED),
       sort:     SORTS[sort.value].field,
       sortDir:  SORTS[sort.value].dir,
     })
@@ -90,14 +90,9 @@ function toggleStatus(value) {
 }
 
 function setSort(value) {
+  if (sort.value === value) return
   sort.value = value
   fetchWords()
-}
-
-async function exportWords() {
-  const all = await wordsRepo.all(libraryId.value)
-  all.sort((a, b) => a.word.localeCompare(b.word))
-  downloadText(`words_${libraryId.value}_${new Date().toISOString().slice(0, 10)}.csv`, stringifyWordsCsv(all))
 }
 
 // после правки — перечитать уже показанные страницы
@@ -113,13 +108,6 @@ watch(libraryId, () => fetchWords(), { immediate: true })
 
 <template>
   <AppTopBar :title="t('words.title')">
-    <UiIconButton icon="import" :label="t('words.import')" @click="importDialog.open()" />
-    <UiIconButton
-        icon="export"
-        :label="t('words.export')"
-        :disabled="!library.current?.words_count"
-        @click="exportWords"
-    />
     <span class="tools-toggle">
       <UiIconButton
           icon="filter"
@@ -163,7 +151,7 @@ watch(libraryId, () => fetchWords(), { immediate: true })
         </div>
         <div class="summary">
           <span class="muted small grow">
-            {{ statuses.length ? t('words.count', { n: total }) : t('words.countAll', { n: total }) }}
+            {{ t('words.count', { n: total }) }}
           </span>
           <div class="sorts" role="radiogroup" :aria-label="t('words.sort')">
             <button
@@ -288,24 +276,24 @@ watch(libraryId, () => fetchWords(), { immediate: true })
   gap: 0.5rem;
 }
 
+/* сортировка — отдельные чипы, один клик */
 .sorts {
   display: flex;
-  border-radius: 0.625rem;
-  box-shadow: inset 0 0 0 1px var(--outline);
-  overflow: hidden;
+  gap: 0.375rem;
 }
 .sort {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 3rem;
+  width: 2.75rem;
   height: 2.5rem;
   border: 0;
+  border-radius: 0.625rem;
   background: none;
+  box-shadow: inset 0 0 0 1px var(--outline);
   color: var(--muted);
 }
-.sort + .sort { border-left: 1px solid var(--outline); }
-.sort--on { background: var(--primary-c); color: var(--on-primary-c); }
+.sort--on { background: var(--primary-c); color: var(--on-primary-c); box-shadow: none; }
 .sort-arrow { margin-left: -0.125rem; }
 .sort-letter {
   /* толщина как у иконок Material Symbols (вес 400) */

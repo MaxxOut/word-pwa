@@ -2,7 +2,6 @@
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useLibraryStore } from '../../stores/library.js'
-import AppIcon from './AppIcon.vue'
 
 // компактный чип «EN» в шапке; по нажатию — список библиотек
 const { t }   = useI18n()
@@ -52,7 +51,6 @@ onBeforeUnmount(() => document.removeEventListener('click', onDocClick))
             <span class="badge" :class="`badge--${lib.id}`">{{ lib.short_name }}</span>
             <span class="grow">{{ t(`libraries.${lib.id}`) }}</span>
             <span class="muted small num">{{ lib.words_count }}</span>
-            <AppIcon v-if="lib.id === library.current?.id" name="check" size="1.25rem" />
           </button>
         </li>
       </ul>
@@ -71,8 +69,9 @@ onBeforeUnmount(() => document.removeEventListener('click', onDocClick))
   border-radius: 0.5rem;
   background: var(--primary-c);
   color: var(--on-primary-c);
-  font-family: var(--font-title);
-  font-size: 0.875rem;
+  /* у Montserrat Alternates необычная «E» — коды языков обычным шрифтом */
+  font-family: var(--font-text);
+  font-size: 0.9375rem;
   font-weight: 700;
 }
 
@@ -101,10 +100,13 @@ onBeforeUnmount(() => document.removeEventListener('click', onDocClick))
   text-align: left;
 }
 .menu-item:active { background: var(--container-hi); }
+/* выбранный пункт — подсветка вместо галки */
+.menu-item[aria-checked="true"] { background: var(--primary-c); color: var(--on-primary-c); font-weight: 600; }
+.menu-item[aria-checked="true"] .muted { color: inherit; opacity: 0.75; }
 
 .badge {
-  font-family: var(--font-title);
-  font-size: 0.6875rem;
+  font-family: var(--font-text);
+  font-size: 0.75rem;
   font-weight: 700;
   border-radius: 0.5rem;
   padding: 0.125rem 0.4375rem;

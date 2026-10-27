@@ -1,12 +1,15 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { libraries as librariesRepo, maintenance } from '../../data/index.js'
+import { libraries as librariesRepo, words as wordsRepo, maintenance } from '../../data/index.js'
+import { stringifyWordsCsv } from '../../domain/csv.js'
+import { downloadText } from '../../shared/utils/browser.js'
 import { useSettingsStore } from '../../stores/settings.js'
 import { useLibraryStore } from '../../stores/library.js'
 import { toast, confirm } from '../../shared/ui/feedback.js'
 import { STAGES, REPEAT_STAGES } from '../study/stages.js'
 import AppTopBar from '../../shared/components/AppTopBar.vue'
+import ImportDialog from '../words/ImportDialog.vue'
 import UiButton from '../../shared/ui/UiButton.vue'
 import UiSegmented from '../../shared/ui/UiSegmented.vue'
 import UiStepper from '../../shared/ui/UiStepper.vue'
@@ -47,9 +50,9 @@ watch(form, value => {
 }, { deep: true })
 
 const APPEARANCE = computed(() => [
-  { value: 'light',  label: t('settings.light') },
-  { value: 'dark',   label: t('settings.dark') },
-  { value: 'system', label: t('settings.system') },
+  { value: 'light',  label: t('settings.light'), icon: 'light' },
+  { value: 'dark',   label: t('settings.dark'), icon: 'dark' },
+  { value: 'system', label: t('settings.system'), icon: 'system' },
 ])
 
 const TEXT_SIZES = [
@@ -66,6 +69,16 @@ const LOCALES = computed(() => [
 ])
 
 const libName = computed(() => library.current?.short_name)
+
+const importDialog = ref(null)
+
+// экспорт = резервная копия библиотеки с прогрессом
+async function exportWords() {
+  const id  = library.current.id
+  const all = await wordsRepo.all(id)
+  all.sort((a, b) => a.word.localeCompare(b.word))
+  downloadText(`words_${id}_${new Date().toISOString().slice(0, 10)}.csv`, stringifyWordsCsv(all))
+}
 
 async function resetProgress() {
   const lib = library.current
@@ -170,6 +183,27 @@ async function wipeAll() {
       <h3>{{ t('settings.data') }}</h3>
       <div class="action">
         <div class="grow">
+          <div>{{ t('settings.importWords', { lib: libName }) }}</div>
+          <div class="muted small">{{ t('settings.importHint') }}</div>
+        </div>
+        <UiButton variant="outlined" icon="import" @click="importDialog.open()">{{ t('words.import') }}</UiButton>
+      </div>
+      <div class="action">
+        <div class="grow">
+          <div>{{ t('settings.exportWords', { lib: libName }) }}</div>
+          <div class="muted small">{{ t('settings.exportHint') }}</div>
+        </div>
+        <UiButton
+            variant="outlined"
+            icon="export"
+            :disabled="!library.current?.words_count"
+            @click="exportWords"
+        >
+          {{ t('words.export') }}
+        </UiButton>
+      </div>
+      <div class="action">
+        <div class="grow">
           <div>{{ t('settings.resetProgress', { lib: libName }) }}</div>
           <div class="muted small">{{ t('settings.resetProgressHint') }}</div>
         </div>
@@ -193,6 +227,8 @@ async function wipeAll() {
 
     <p class="version muted small">WordApp {{ version }}</p>
   </div>
+
+  <ImportDialog ref="importDialog" :library-id="library.current?.id" @imported="library.load()" />
 </template>
 
 <style scoped>

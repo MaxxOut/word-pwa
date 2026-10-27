@@ -1,5 +1,7 @@
 <script setup>
-// сегментированная кнопка: выбор одного из 2–4 вариантов. options: [{ value, label }]
+import AppIcon from '../components/AppIcon.vue'
+
+// выбор одного из 2–4 вариантов отдельными чипами. options: [{ value, label, icon? }]
 const model = defineModel({ type: [String, Number, null], default: null })
 
 defineProps({
@@ -23,6 +25,7 @@ defineProps({
           :aria-checked="o.value === model"
           @click="model = o.value"
       >
+        <AppIcon v-if="o.icon" :name="o.icon" size="1.125rem" />
         {{ o.label }}
       </button>
     </div>
@@ -34,22 +37,31 @@ defineProps({
 
 .seg {
   display: flex;
-  border-radius: 1.375rem;
-  box-shadow: inset 0 0 0 1px var(--outline);
-  overflow: hidden;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
 .seg-item {
   flex: 1;
-  min-height: 2.75rem;
-  padding: 0.25rem 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  min-height: 2.5rem;
+  padding: 0 0.75rem;
   border: 0;
-  background: none;
+  border-radius: 0.625rem;
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--outline);
   font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--muted);
+  font-weight: 500;
+  white-space: nowrap;
   transition: background-color 0.15s;
 }
-.seg-item + .seg-item { border-left: 1px solid var(--outline); }
-.seg-item--on { background: var(--primary-c); color: var(--on-primary-c); }
+.seg-item--on {
+  background: var(--primary-c);
+  color: var(--on-primary-c);
+  box-shadow: none;
+  font-weight: 600;
+}
 </style>

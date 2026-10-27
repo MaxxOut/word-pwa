@@ -33,6 +33,9 @@ import filter      from '@material-symbols/svg-400/rounded/filter_list.svg?raw'
 import schedule    from '@material-symbols/svg-400/rounded/schedule.svg?raw'
 import south       from '@material-symbols/svg-400/rounded/south.svg?raw'
 import north       from '@material-symbols/svg-400/rounded/north.svg?raw'
+import lightMode   from '@material-symbols/svg-400/rounded/light_mode.svg?raw'
+import darkMode    from '@material-symbols/svg-400/rounded/dark_mode.svg?raw'
+import autoMode    from '@material-symbols/svg-400/rounded/brightness_auto.svg?raw'
 
 const ICONS = {
   home, 'home-fill': homeFill,
@@ -44,6 +47,7 @@ const ICONS = {
   import: importIcon, export: exportIcon,
   search, check, more, dropdown, hint, backspace, warning, info, minus, share,
   filter, schedule, south, north,
+  light: lightMode, dark: darkMode, system: autoMode,
 }
 
 const props = defineProps({
