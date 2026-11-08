@@ -15,6 +15,7 @@ import readingFill from '@material-symbols/svg-400/rounded/menu_book-fill.svg?ra
 import castle      from '@material-symbols/svg-400/rounded/castle.svg?raw'
 import science     from '@material-symbols/svg-400/rounded/science.svg?raw'
 import coffee      from '@material-symbols/svg-400/rounded/coffee.svg?raw'
+import code        from '@material-symbols/svg-400/rounded/code.svg?raw'
 import toc         from '@material-symbols/svg-400/rounded/toc.svg?raw'
 import add         from '@material-symbols/svg-400/rounded/add.svg?raw'
 import edit        from '@material-symbols/svg-400/rounded/edit.svg?raw'
@@ -47,7 +48,7 @@ const ICONS = {
   words, 'words-fill': wordsFill,
   study, repeat,
   reading, 'reading-fill': readingFill,
-  castle, science, coffee, toc,
+  castle, science, coffee, code, toc,
   settings, 'settings-fill': settingsFill,
   add, edit, delete: del, back, close, speak,
   import: importIcon, export: exportIcon,

@@ -6,6 +6,7 @@ export const TOPICS = [
   { id: 'tales',   icon: 'castle' },
   { id: 'science', icon: 'science' },
   { id: 'life',    icon: 'coffee' },
+  { id: 'tech',    icon: 'code' },
 ]
 
 const BY_LIBRARY = { en, de }

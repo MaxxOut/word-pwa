@@ -209,6 +209,7 @@ export default {
       tales:   'Сказки и басни',
       science: 'Наука и техника',
       life:    'Жизнь и люди',
+      tech:    'Программирование',
     },
   },
   settings: {
