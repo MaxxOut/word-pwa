@@ -10,6 +10,7 @@ import UiInput from '@/shared/ui/UiInput.vue'
 import UiButton from '@/shared/ui/UiButton.vue'
 import UiIconButton from '@/shared/ui/UiIconButton.vue'
 import UiSwitch from '@/shared/ui/UiSwitch.vue'
+import TranslateActions from '@/core/translate/TranslateActions.vue'
 
 const props = defineProps({
   libraryId: { type: String, default: null },
@@ -25,6 +26,7 @@ const saving    = ref(false)
 const editing   = ref(null)
 const wordError = ref('')
 const wordInput = ref(null)
+const opened    = ref(0) // номер открытия: блок перевода пересоздаётся — запрос по прошлому слову не долетит
 
 const emptyForm = () => ({
   word:          '',
@@ -50,6 +52,7 @@ function open(word = null) {
         is_ignored:    word.is_ignored,
       }
     : emptyForm()
+  opened.value++
   visible.value = true
   // новое слово — сразу клавиатура
   if (!word) nextTick(() => wordInput.value?.focus())
@@ -96,6 +99,24 @@ async function remove() {
   } catch {
     toast.error(t('errors.delete'))
   }
+}
+
+// онлайн-перевод — в первое пустое поле перевода (или новым)
+function onOnline(text) {
+  const list = form.value.translation
+  const i    = list.findIndex(s => !s.trim())
+  if (i === -1) list.push(text)
+  else list[i] = text
+}
+
+// ответ ИИ заполняет форму, сохраняет пользователь. Начальную форму (peeped → peep)
+// подставляем только в новое слово — у существующего слово не меняем
+function onAi(row) {
+  const f = form.value
+  if (!editing.value) f.word = row.word
+  f.translation = [...row.translation]
+  if (!f.transcription.trim() && row.transcription) f.transcription = row.transcription
+  f.examples = [...new Set([...f.examples.filter(s => s.trim()), ...row.examples])]
 }
 
 defineExpose({ open })
@@ -148,6 +169,15 @@ defineExpose({ open })
         <UiButton variant="text" icon="add" class="add" @click="form.translation.push('')">
           {{ t('words.addTranslation') }}
         </UiButton>
+        <TranslateActions
+            :key="opened"
+            v-if="libraryId || editing"
+            :word="form.word"
+            :from="editing?.library_id ?? libraryId"
+            :context="form.examples.find(s => s.trim()) ?? ''"
+            @online="onOnline"
+            @ai="onAi"
+        />
       </fieldset>
 
       <fieldset class="group">

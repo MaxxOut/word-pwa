@@ -7,7 +7,7 @@ import { useLibraryStore } from '@/core/library/store.js'
 import { downloadText } from '@/shared/utils/browser.js'
 import { toast } from '@/shared/ui/feedback.js'
 import UiButton from '@/shared/ui/UiButton.vue'
-import { stringifyWordsCsv } from './csv.js'
+import { stringifyWordsCsv } from '@/core/words/csv.js'
 import ImportDialog from './ImportDialog.vue'
 
 // строки карточки «Данные» в настройках: импорт, экспорт, слова без перевода

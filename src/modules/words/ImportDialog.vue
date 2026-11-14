@@ -2,7 +2,7 @@
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { wordsRepo } from '@/core/words/repo.js'
-import { parseWordsCsv } from './csv.js'
+import { parseWordsCsv } from '@/core/words/csv.js'
 import { useLibraryStore } from '@/core/library/store.js'
 import { toast } from '@/shared/ui/feedback.js'
 import AppIcon from '@/shared/components/AppIcon.vue'

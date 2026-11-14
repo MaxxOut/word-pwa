@@ -21,6 +21,8 @@ export default {
   addWord:     'Новое слово',
   addExample:  'Добавить пример',
   addToDict:   'Добавить в словарь',
+  aiBaseForm:  'ИИ перевёл начальную форму:',
+  cancel:      'Отмена',
   formHint:    'Можно исправить форму: peeped → peep',
   contents:    'Содержание',
   theme:       'Сменить тему',

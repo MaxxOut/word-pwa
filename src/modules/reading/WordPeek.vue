@@ -5,12 +5,14 @@ import { wordsRepo } from '@/core/words/repo.js'
 import { DuplicateWordError } from '@/core/words/errors.js'
 import { cleanToken, exampleAround } from './domain.js'
 import { useLibraryStore } from '@/core/library/store.js'
+import TranslateActions from '@/core/translate/TranslateActions.vue'
 import { toast } from '@/shared/ui/feedback.js'
 import { pushLayer, popLayer } from '@/shared/ui/backClose.js'
 import AppIcon from '@/shared/components/AppIcon.vue'
 import UiButton from '@/shared/ui/UiButton.vue'
 
-// пузырь у нажатого слова: известное — слово и перевод; новое — добавить в словарь.
+// пузырь у нажатого слова: известное — слово и перевод (нет перевода — можно перевести);
+// новое — перевести и добавить в словарь.
 // Под словом, а если снизу не влезает — над ним. Закрывается нажатием мимо и «Назад».
 const props = defineProps({
   libraryId: { type: String, required: true },
@@ -24,10 +26,13 @@ const MARGIN = 8 // px от краёв экрана и от слова
 const visible = ref(false)
 const found   = ref(null)  // слово из словаря
 const word    = ref('')    // новое слово — можно поправить форму
+const translation = ref('') // через запятую — несколько переводов
 const example = ref('')
 const withExample = ref(true)
 const error   = ref('')
+const aiRow   = ref(null) // ответ ИИ с другим словом (начальная форма) — ждёт подтверждения
 const saving  = ref(false)
+const opened  = ref(0)    // номер открытия: блок перевода пересоздаётся — старый ответ не попадёт к новому слову
 
 const bubble = ref(null)
 const pos    = ref({ top: 0, left: 0, arrow: 0, above: false })
@@ -40,13 +45,15 @@ async function open(el, tokens, k) {
   if (!text) return
   const known = await wordsRepo.find(props.libraryId, text)
 
-  found.value = known
-  if (!known) {
-    // в английском заглавная — обычно начало предложения; в немецком — ещё и существительное
-    word.value        = props.libraryId === 'de' ? text : text.toLowerCase()
-    example.value     = exampleAround(tokens, k)
-    withExample.value = true
-  }
+  opened.value++
+  found.value       = known
+  translation.value = ''
+  aiRow.value       = null
+  // предложение — пример для словаря и подсказка ИИ, какое значение нужно
+  example.value     = exampleAround(tokens, k)
+  withExample.value = true
+  // в английском заглавная — обычно начало предложения; в немецком — ещё и существительное
+  if (!known) word.value = props.libraryId === 'de' ? text : text.toLowerCase()
   error.value = ''
 
   anchor?.classList.remove('w--on')
@@ -55,6 +62,8 @@ async function open(el, tokens, k) {
 
   if (!visible.value) {
     visible.value = true
+    // перевод и поле ответа ИИ меняют высоту — пузырь переставляется
+    nextTick(() => resizer.observe(bubble.value))
     pushLayer(closeFromBack)
     document.addEventListener('pointerdown', onOutside, true)
   }
@@ -74,9 +83,12 @@ function place() {
   pos.value = { top: Math.max(top, MARGIN), left, arrow: mid - left, above }
 }
 
+const resizer = new ResizeObserver(() => anchor && bubble.value && place())
+
 function hide() {
   if (!visible.value) return
   visible.value = false
+  resizer.disconnect()
   anchor?.classList.remove('w--on')
   anchor = null
   document.removeEventListener('pointerdown', onOutside, true)
@@ -103,15 +115,65 @@ function onOutside(e) {
 async function add() {
   const text = word.value.trim()
   if (!text) return
+  await save(() => wordsRepo.create(props.libraryId, {
+    word:        text,
+    translation: splitTranslation(translation.value),
+    examples:    bookExample(),
+  }), true)
+}
+
+const splitTranslation = value => value.split(',').map(s => s.trim()).filter(Boolean)
+const bookExample      = () => (withExample.value && example.value ? [example.value] : [])
+
+// известное слово без перевода — сохранить перевод
+async function saveTranslation() {
+  const list = splitTranslation(translation.value)
+  if (!list.length) return
+  await save(() => wordsRepo.update(found.value.id, { translation: list }), false)
+}
+
+// ответ ИИ: новое слово — сразу в словарь (в первом поле может быть начальная форма: peeped → peep);
+// известное — дополнить перевод, транскрипцию и примеры
+async function fromAi(row) {
+  if (found.value) {
+    const w = found.value
+    // ответ про другое слово — не дописывать молча, показать и спросить
+    if (row.word.trim().toLowerCase() !== w.word.toLowerCase()) {
+      aiRow.value = row
+      return
+    }
+    await save(() => wordsRepo.update(w.id, {
+      translation:   row.translation,
+      transcription: w.transcription || row.transcription,
+      examples:      [...new Set([...(w.examples ?? []), ...row.examples])],
+    }), false)
+    return
+  }
+  // ИИ вернул другое слово (peeped → peep) — данные только для него: показать и спросить
+  if (row.word.trim().toLowerCase() !== word.value.trim().toLowerCase()) {
+    aiRow.value = row
+    return
+  }
+  await addAiRow(row)
+}
+
+function addAiRow(row) {
+  return save(() => wordsRepo.create(props.libraryId, {
+    word:          row.word,
+    translation:   row.translation,
+    transcription: row.transcription,
+    examples:      [...new Set([...bookExample(), ...row.examples])],
+  }), true)
+}
+
+async function save(action, created) {
   saving.value = true
+  error.value  = ''
   try {
-    await wordsRepo.create(props.libraryId, {
-      word:     text,
-      examples: withExample.value && example.value ? [example.value] : [],
-    })
+    await action()
     close()
-    toast.success(t('word.created'))
-    library.load()
+    toast.success(t(created ? 'word.created' : 'word.updated'))
+    if (created) library.load()
   } catch (err) {
     if (err instanceof DuplicateWordError) error.value = t('word.duplicate')
     else toast.error(t('errors.save'))
@@ -120,7 +182,10 @@ async function add() {
   }
 }
 
-onBeforeUnmount(close)
+onBeforeUnmount(() => {
+  close()
+  resizer.disconnect()
+})
 
 defineExpose({ open, close })
 </script>
@@ -137,13 +202,38 @@ defineExpose({ open, close })
           role="dialog"
       >
         <!-- известное слово -->
-        <template v-if="found">
+        <template v-if="found && found.translation?.length">
           <b class="word">{{ found.word }}</b>
-          <div v-if="found.translation?.length" class="translation">{{ found.translation.join(', ') }}</div>
-          <div v-else class="muted translation translation--none">{{ t('status.untranslated') }}</div>
+          <div class="translation">{{ found.translation.join(', ') }}</div>
         </template>
 
-        <!-- новое — добавить -->
+        <!-- известное без перевода — перевести и сохранить -->
+        <form v-else-if="found" class="add" @submit.prevent="saveTranslation">
+          <b class="word">{{ found.word }}</b>
+          <input
+              v-model="translation"
+              class="tr-input"
+              :placeholder="t('status.untranslated')"
+              :aria-label="t('word.translation')"
+              autocomplete="off"
+          >
+          <TranslateActions :key="opened" :word="found.word" :from="libraryId" :context="example" @online="translation = $event" @ai="fromAi" />
+          <div v-if="error" class="error small">{{ error }}</div>
+          <!-- ответ ИИ про другое слово — сохранить его новым словом или отменить -->
+          <div v-if="aiRow" class="choose">
+            <div class="muted small">{{ t('reading.aiBaseForm') }}</div>
+            <div><b>{{ aiRow.word }}</b> — {{ aiRow.translation.join(', ') }}</div>
+            <div class="choose-buttons">
+              <UiButton variant="text" @click="aiRow = null">{{ t('reading.cancel') }}</UiButton>
+              <UiButton variant="filled" :loading="saving" @click="addAiRow(aiRow)">{{ t('common.save') }}</UiButton>
+            </div>
+          </div>
+          <UiButton v-else variant="filled" type="submit" :loading="saving" :disabled="!translation.trim()" block>
+            {{ t('common.save') }}
+          </UiButton>
+        </form>
+
+        <!-- новое — перевести и добавить -->
         <form v-else class="add" @submit.prevent="add">
           <input
               v-model="word"
@@ -154,6 +244,14 @@ defineExpose({ open, close })
               autocapitalize="off"
               spellcheck="false"
           >
+          <input
+              v-model="translation"
+              class="tr-input"
+              :placeholder="t('word.translation')"
+              :aria-label="t('word.translation')"
+              autocomplete="off"
+          >
+          <TranslateActions :key="opened" :word="word" :from="libraryId" :context="example" @online="translation = $event" @ai="fromAi" />
           <div v-if="error" class="error small">{{ error }}</div>
           <label v-if="example" class="example">
             <input v-model="withExample" type="checkbox" class="sr-only">
@@ -163,7 +261,16 @@ defineExpose({ open, close })
             <span class="muted small">{{ t('reading.addExample') }}</span>
             <span class="example-text">{{ example }}</span>
           </label>
-          <UiButton variant="filled" icon="add" type="submit" :loading="saving" block>
+          <!-- ИИ вернул начальную форму — сохранить её или отменить -->
+          <div v-if="aiRow" class="choose">
+            <div class="muted small">{{ t('reading.aiBaseForm') }}</div>
+            <div><b>{{ aiRow.word }}</b> — {{ aiRow.translation.join(', ') }}</div>
+            <div class="choose-buttons">
+              <UiButton variant="text" @click="aiRow = null">{{ t('reading.cancel') }}</UiButton>
+              <UiButton variant="filled" :loading="saving" @click="addAiRow(aiRow)">{{ t('common.save') }}</UiButton>
+            </div>
+          </div>
+          <UiButton v-else variant="filled" icon="add" type="submit" :loading="saving" block>
             {{ t('reading.addToDict') }}
           </UiButton>
         </form>
@@ -230,7 +337,21 @@ defineExpose({ open, close })
 }
 .word-input:focus { border-bottom: 1px solid var(--primary); }
 
+.tr-input {
+  width: 100%;
+  padding: 0.5rem 0.625rem;
+  border: 1px solid var(--outline);
+  border-radius: 0.5rem;
+  background: var(--bg);
+  color: var(--on);
+  font: inherit;
+}
+.tr-input:focus { outline: none; border-color: var(--primary); }
+
 .error { color: var(--error); }
+
+.choose { display: grid; gap: 0.375rem; }
+.choose-buttons { display: flex; justify-content: flex-end; gap: 0.5rem; }
 
 .example {
   display: grid;

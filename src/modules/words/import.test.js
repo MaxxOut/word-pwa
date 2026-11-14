@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { db } from '@/core/db.js'
 import { wordsRepo as words } from '@/core/words/repo.js'
 import { librariesRepo as libraries } from '@/core/library/repo.js'
-import { parseWordsCsv, stringifyWordsCsv } from './csv.js'
+import { parseWordsCsv, stringifyWordsCsv } from '@/core/words/csv.js'
 
 beforeEach(async () => {
   await db.delete()

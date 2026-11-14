@@ -21,6 +21,8 @@ export default {
   addWord:     'Нове слово',
   addExample:  'Додати приклад',
   addToDict:   'Додати до словника',
+  aiBaseForm:  'ШІ переклав початкову форму:',
+  cancel:      'Скасувати',
   formHint:    'Можна виправити форму: peeped → peep',
   contents:    'Зміст',
   theme:       'Змінити тему',
