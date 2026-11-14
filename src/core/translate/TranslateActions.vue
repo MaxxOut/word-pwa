@@ -9,27 +9,37 @@ import { buildPrompt } from './prompt.js'
 
 // три способа перевести слово — всегда все три:
 // онлайн (MyMemory) → emit('online', текст); Google Переводчик — вручную;
-// промпт для ИИ → поле для ответа → emit('ai', { word, translation, transcription, examples })
+// промпт для ИИ → ответ в поле → emit('ai', { word, translation, transcription, examples }).
+// Поле ответа видно всегда — страховка: ответ можно вставить и без нового копирования промпта
 const props = defineProps({
   word:    { type: String, required: true },
   from:    { type: String, required: true }, // язык слова: en | de
   context: { type: String, default: '' },    // предложение из текста — ИИ выберет нужное значение
+  // промпт для этого слова уже скопирован (пузырь закрывался, пока ходили в чат) — сразу поле ответа,
+  // промпт заново не копируем, чтобы не затереть ответ в буфере
+  waiting: { type: Boolean, default: false },
 })
 
-const emit = defineEmits(['online', 'ai'])
+const emit = defineEmits(['online', 'ai', 'copied'])
 
 const i18n          = useI18n()
 const { t, locale } = i18n
 const settingsStore = useSettingsStore()
 
 const loading = ref(false)
-const pasting = ref(false) // промпт скопирован — ждём ответ
+const pasting = ref(props.waiting) // промпт скопирован — подсказка, что делать дальше
 const prompt  = ref('')    // не скопировался — показать, чтобы скопировать вручную
-let copied    = ''         // последний промпт — отличить его от ответа, если вставили его
+let copied    = props.waiting ? makePrompt() : '' // последний промпт — отличить его от ответа, если вставили его
 const answer  = ref('')
 const error   = ref('')
 
-const text = () => props.word.trim()
+function text() {
+  return props.word.trim()
+}
+
+function makePrompt() {
+  return buildPrompt(i18n, { word: text(), context: props.context, from: props.from, to: locale.value })
+}
 
 async function online() {
   if (!text()) return
@@ -51,22 +61,25 @@ function google() {
 
 async function copyPrompt() {
   if (!text()) return
-  const value = copied = buildPrompt(i18n, { word: text(), context: props.context, from: props.from, to: locale.value })
+  const value = copied = makePrompt()
   error.value  = ''
-  answer.value = ''
   try {
     await navigator.clipboard.writeText(value)
     prompt.value = ''
+    emit('copied') // только если правда в буфере — иначе при повторном открытии было бы «скопирован»
   } catch {
     prompt.value = value
   }
   pasting.value = true
 }
 
+// чтобы узнать вставленный вместо ответа промпт — и если его скопировали до закрытия пузыря
+const promptText = () => copied || makePrompt()
+
 function apply() {
-  const row = parseAiLine(answer.value, { prompt: copied })
+  const row = parseAiLine(answer.value, { prompt: promptText() })
   if (!row) {
-    error.value = t(isPromptPasted(answer.value, copied) ? 'translate.promptPasted' : 'translate.badAnswer')
+    error.value = t(isPromptPasted(answer.value, promptText()) ? 'translate.promptPasted' : 'translate.badAnswer')
     return
   }
   pasting.value = false
@@ -80,7 +93,7 @@ watch(answer, () => { error.value = '' })
 // (setTimeout — текст попадает в поле уже после события paste)
 function onPaste() {
   setTimeout(() => {
-    if (parseAiLine(answer.value, { prompt: copied }) || isPromptPasted(answer.value, copied)) apply()
+    if (parseAiLine(answer.value, { prompt: promptText() }) || isPromptPasted(answer.value, promptText())) apply()
   })
 }
 </script>
@@ -99,13 +112,13 @@ function onPaste() {
       </UiButton>
     </div>
 
-    <div v-if="pasting" class="paste">
-      <div class="muted small">{{ prompt ? t('translate.copyFailed') : t('translate.copied') }}</div>
+    <div class="paste">
+      <div v-if="pasting" class="muted small">{{ prompt ? t('translate.copyFailed') : t('translate.copied') }}</div>
       <textarea v-if="prompt" class="area" readonly rows="4" :value="prompt" @focus="$event.target.select()" />
       <textarea
           v-model="answer"
           class="area"
-          rows="2"
+          rows="1"
           :placeholder="t('translate.answer')"
           :aria-label="t('translate.answer')"
           autocomplete="off"
@@ -113,7 +126,7 @@ function onPaste() {
           @paste="onPaste"
       />
       <div v-if="error" class="error small">{{ error }}</div>
-      <UiButton class="tr-btn" variant="filled" :disabled="!answer.trim()" @click="apply">
+      <UiButton v-if="answer.trim()" class="tr-btn" variant="filled" @click="apply">
         {{ t('translate.apply') }}
       </UiButton>
     </div>

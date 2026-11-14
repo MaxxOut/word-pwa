@@ -19,6 +19,9 @@ const props = defineProps({
   libraryId: { type: String, required: true },
 })
 
+// closed — книга досчитает страницы, отложенные, пока была клавиатура
+const emit = defineEmits(['closed'])
+
 const { t }   = useI18n()
 const library = useLibraryStore()
 
@@ -39,6 +42,11 @@ const clicked = ref('')   // нажатое слово как в тексте (�
 const suggestions = ref([]) // слова словаря, формой которых может быть нажатое (не больше 3)
 
 const MAX_SUGGESTIONS = 3
+
+// слово, для которого промпт уже скопирован: пузырь могли закрыть, пока ходили в чат с ИИ —
+// при новом нажатии на него сразу поле ответа, промпт не копируется заново (не затрёт ответ в буфере)
+const waitingFor = ref('')
+const isWaiting  = () => waitingFor.value === clicked.value.toLowerCase()
 
 const bubble = ref(null)
 const pos    = ref({ top: 0, left: 0, arrow: 0, above: false })
@@ -106,6 +114,7 @@ function hide() {
   anchor?.classList.remove('w--on')
   anchor = null
   document.removeEventListener('pointerdown', onOutside, true)
+  emit('closed')
 }
 
 function close() {
@@ -205,6 +214,7 @@ async function attachTo(target) {
   try {
     await wordsRepo.addForm(target.id, { word: formWord })
     close()
+    waitingFor.value = ''
     toast.success(t('reading.formAdded', { form: formWord, word: target.word }))
   } catch (err) {
     if (err instanceof FormsLimitError) error.value = t('word.formsLimit')
@@ -221,6 +231,7 @@ async function save(action, created) {
   try {
     await action()
     close()
+    waitingFor.value = ''
     toast.success(t(created ? 'word.created' : 'word.updated'))
     if (created) library.load()
   } catch (err) {
@@ -277,7 +288,7 @@ defineExpose({ open, close })
                 :aria-label="t('word.translation')"
                 autocomplete="off"
             >
-            <TranslateActions :key="opened" :word="found.word" :from="libraryId" :context="example" @online="translation = $event" @ai="fromAi" />
+            <TranslateActions :key="opened" :waiting="isWaiting()" :word="found.word" :from="libraryId" :context="example" @online="translation = $event" @ai="fromAi" @copied="waitingFor = clicked.toLowerCase()" />
             <div v-if="error" class="error small">{{ error }}</div>
           </div>
           <!-- ответ ИИ про другое слово — сохранить его новым словом или отменить -->
@@ -336,7 +347,7 @@ defineExpose({ open, close })
                 :aria-label="t('word.translation')"
                 autocomplete="off"
             >
-            <TranslateActions :key="opened" :word="word" :from="libraryId" :context="example" @online="translation = $event" @ai="fromAi" />
+            <TranslateActions :key="opened" :waiting="isWaiting()" :word="word" :from="libraryId" :context="example" @online="translation = $event" @ai="fromAi" @copied="waitingFor = clicked.toLowerCase()" />
             <div v-if="error" class="error small">{{ error }}</div>
           </div>
 

@@ -51,6 +51,7 @@ const topics = computed(() => {
 .topic {
   display: grid;
   align-content: start;
+  min-width: 0;
   gap: 0.25rem;
   min-height: 8rem;
   padding: 1rem 1.125rem;
@@ -83,9 +84,12 @@ const topics = computed(() => {
   color: var(--on-primary);
 }
 
+/* длинное название («Программирование») переносится по слогам, а не выталкивает плитку за экран */
 .topic-title {
   font-family: var(--font-title);
   font-weight: 700;
   line-height: 1.2;
+  hyphens: auto;
+  overflow-wrap: anywhere;
 }
 </style>

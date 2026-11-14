@@ -256,15 +256,35 @@ onMounted(async () => {
   ready.value = true
 
   resizeObserver = new ResizeObserver(([entry]) => {
-    const size = `${Math.round(entry.contentRect.width)}x${Math.round(entry.contentRect.height)}`
-    if (size === lastSize) return
-    lastSize = size
-    peek.value?.close()
-    layout(currentWord)
+    const width = Math.round(entry.contentRect.width)
+    onResize(width, `${width}x${Math.round(entry.contentRect.height)}`)
   })
   resizeObserver.observe(viewport.value)
   window.addEventListener('keydown', onKey)
 })
+
+// размер, отложенный, пока открыт пузырь с полем ввода (см. onResize)
+let pendingSize = null
+
+// force — пузырь закрыт: поле в нём ещё может держать фокус, но клавиатура уже не повод ждать
+function onResize(width, size, force = false) {
+  pendingSize = null
+  if (size === lastSize) return
+  // открылась/закрылась клавиатура (поле в пузыре — перевод, ответ ИИ): меняется только высота —
+  // пузырь не закрываем и страницы не пересчитываем, иначе в поле не попасть.
+  // Пересчёт — когда пузырь закроется (onPeekClosed)
+  if (!force && width === Number(lastSize.split('x')[0]) && document.activeElement?.matches('input, textarea')) {
+    pendingSize = { width, size }
+    return
+  }
+  lastSize = size
+  peek.value?.close()
+  layout(currentWord)
+}
+
+function onPeekClosed() {
+  if (pendingSize) onResize(pendingSize.width, pendingSize.size, true)
+}
 
 onBeforeUnmount(() => {
   flush()
@@ -334,7 +354,7 @@ onBeforeUnmount(() => {
       <span class="num counter">{{ page + 1 }} / {{ pages }}</span>
     </footer>
 
-    <WordPeek ref="peek" :library-id="text.library_id" />
+    <WordPeek ref="peek" :library-id="text.library_id" @closed="onPeekClosed" />
 
     <UiSheet v-model="contents" :title="t('reading.contents')">
       <ol class="toc">
