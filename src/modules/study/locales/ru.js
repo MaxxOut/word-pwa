@@ -60,6 +60,7 @@ export default {
     activityDay:    '{date}: выучено {studied}, повторено {repeated}',
   },
   settings: {
+    tab: 'Слова',
     learning:              'Обучение',
     repeat:                'Повторение',
     wordsPerSession:       'Слов за сессию',

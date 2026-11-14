@@ -1,5 +1,6 @@
 // Изучение и повторение: занятия по этапам, плитки «Учить» / «Повторить» и активность
 import studyIcon from '@material-symbols/svg-400/rounded/school.svg?raw'
+import studyFill from '@material-symbols/svg-400/rounded/school-fill.svg?raw'
 import repeatIcon from '@material-symbols/svg-400/rounded/replay.svg?raw'
 import StudyView from './StudyView.vue'
 import RepeatView from './RepeatView.vue'
@@ -20,9 +21,10 @@ export default {
     { component: RepeatTile,   order: 20 },
     { component: ActivityTile, order: 50 },
   ],
+  settingsTabs: [{ id: 'study', icon: 'study', label: 'study.settings.tab', order: 10 }],
   settings: [
-    { component: LearningSettings, order: 10 },
-    { component: RepeatSettings,   order: 20 },
+    { tab: 'study', component: LearningSettings, order: 10 },
+    { tab: 'study', component: RepeatSettings,   order: 20 },
   ],
-  icons: { study: studyIcon, repeat: repeatIcon },
+  icons: { study: studyIcon, 'study-fill': studyFill, repeat: repeatIcon },
 }

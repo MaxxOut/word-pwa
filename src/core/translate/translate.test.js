@@ -75,3 +75,11 @@ describe('prompt pasted back as an answer', async () => {
     i18n.global.locale.value = 'ru'
   })
 })
+
+it('isEmail accepts only address-like values', async () => {
+  const { isEmail } = await import('./translate.js')
+  expect(isEmail('student@mail.com')).toBe(true)
+  expect(isEmail('a@b')).toBe(false)
+  expect(isEmail('name@')).toBe(false)
+  expect(isEmail('')).toBe(false)
+})

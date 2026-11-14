@@ -31,6 +31,10 @@ import north       from '@material-symbols/svg-400/rounded/north.svg?raw'
 import lightMode   from '@material-symbols/svg-400/rounded/light_mode.svg?raw'
 import darkMode    from '@material-symbols/svg-400/rounded/dark_mode.svg?raw'
 import autoMode    from '@material-symbols/svg-400/rounded/brightness_auto.svg?raw'
+import tune        from '@material-symbols/svg-400/rounded/tune.svg?raw'
+import tuneFill    from '@material-symbols/svg-400/rounded/tune-fill.svg?raw'
+import database    from '@material-symbols/svg-400/rounded/database.svg?raw'
+import databaseFill from '@material-symbols/svg-400/rounded/database-fill.svg?raw'
 
 const ICONS = {
   home, 'home-fill': homeFill,
@@ -40,7 +44,10 @@ const ICONS = {
   search, check, more, dropdown, hint, backspace, warning, info, minus, share,
   filter, schedule, south, north,
   light: lightMode, dark: darkMode, system: autoMode,
+  tune, 'tune-fill': tuneFill, database, 'database-fill': databaseFill,
 }
+
+export const hasIcon = name => name in ICONS
 
 export function registerIcons(icons) {
   for (const [name, svg] of Object.entries(icons)) {

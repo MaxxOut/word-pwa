@@ -1,29 +1,49 @@
 <script setup>
-import { useRoute } from 'vue-router'
+import { computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import AppIcon from '@/shared/components/AppIcon.vue'
+import AppIcon, { hasIcon } from '@/shared/components/AppIcon.vue'
 import AppLogo from '@/shared/components/AppLogo.vue'
-import { NAV_ITEMS } from '@/core/shell/nav.js'
+import { goBack } from '@/shared/utils/navigation.js'
+import { menuOf } from '@/core/shell/nav.js'
 
-// телефон — нижнее меню, широкий экран — боковая панель (rail)
-const route = useRoute()
-const { t } = useI18n()
+// телефон — нижнее меню, широкий экран — боковая панель (rail).
+// В настройках — свои пункты: «Назад» (той же ширины, что и пункты — меню не дёргается) и вкладки
+// настроек; вкладки сменяют друг друга без истории, поэтому «Назад» уводит туда, откуда пришли
+const route  = useRoute()
+const router = useRouter()
+const { t }  = useI18n()
+
+const items    = computed(() => menuOf(route))
+const settings = computed(() => route.name === 'settings')
+
+// у активного — закрашенная иконка, если такая есть
+const iconOf = item => (item.on && hasIcon(`${item.icon}-fill`) ? `${item.icon}-fill` : item.icon)
 </script>
 
 <template>
-  <nav class="nav sticky-bottom" :aria-label="t('nav.label')" :style="{ '--nav-count': NAV_ITEMS.length }">
-    <AppLogo class="nav-logo" size="2.5rem" />
+  <nav
+      class="nav sticky-bottom"
+      :aria-label="t('nav.label')"
+      :style="{ '--nav-count': items.length + (settings ? 1 : 0) }"
+  >
+    <AppLogo v-if="!settings" class="nav-logo" size="2.5rem" />
+    <button v-else v-ripple type="button" class="nav-item nav-back" @click="goBack(router, { name: 'home' })">
+      <span class="pill"><AppIcon name="back" /></span>
+      <span class="nav-label">{{ t('common.back') }}</span>
+    </button>
     <RouterLink
-        v-for="item in NAV_ITEMS"
-        :key="item.route"
+        v-for="item in items"
+        :key="item.key"
         v-ripple
-        :to="{ name: item.route }"
+        :to="item.to"
+        :replace="item.replace"
         class="nav-item"
-        :class="{ 'nav-item--on': route.name === item.route }"
-        :aria-current="route.name === item.route ? 'page' : undefined"
+        :class="{ 'nav-item--on': item.on }"
+        :aria-current="item.on ? 'page' : undefined"
     >
       <span class="pill">
-        <AppIcon :name="route.name === item.route ? `${item.icon}-fill` : item.icon" />
+        <AppIcon :name="iconOf(item)" />
       </span>
       <span class="nav-label">{{ t(item.label) }}</span>
     </RouterLink>
@@ -43,6 +63,15 @@ const { t } = useI18n()
 }
 
 .nav-logo { display: none; }
+
+.nav-back {
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--muted);
+}
 
 .nav-item {
   display: grid;
@@ -85,6 +114,7 @@ const { t } = useI18n()
     padding: 1rem 0;
   }
   .nav-logo { justify-self: center; margin-bottom: 1.5rem; }
+  .nav-back { margin-bottom: 1rem; }
   .nav-item { min-height: 0; padding: 0.75rem 0.125rem; }
 }
 </style>

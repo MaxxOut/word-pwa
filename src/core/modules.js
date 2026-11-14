@@ -6,8 +6,9 @@
 //   routes      — маршруты vue-router; имена — с префиксом модуля или его id
 //   nav         — [{ route, icon, label, order }] пункты нижнего меню
 //   home        — [{ component, order }] плитки главной; получают проп words (слова библиотеки или null)
-//   settings    — [{ component, order }] карточки в настройках
-//   dataActions — [{ component, order }] строки в карточке «Данные» настроек
+//   settingsTabs — [{ id, icon, label, order }] свои вкладки настроек
+//   settings    — [{ tab, component, order }] карточки на вкладке настроек (своей или ядра: general, data)
+//   dataActions — [{ component, order }] строки в карточке «Данные» (вкладка data)
 //   icons       — { имя: svg } свои иконки для AppIcon
 //
 // Модули не импортируют друг друга: общее — только через ядро (core/*) и shared/*.
@@ -31,6 +32,7 @@ function collect(key) {
 export const moduleRoutes     = modules.flatMap(m => m.routes ?? [])
 export const moduleNav        = collect('nav')
 export const homeTiles        = collect('home')
+export const settingsTabs     = collect('settingsTabs')
 export const settingsSections = collect('settings')
 export const dataActions      = collect('dataActions')
 

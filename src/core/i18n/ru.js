@@ -96,6 +96,15 @@ export default {
     update:      'Обновить',
   },
   settings: {
+    tabs: {
+      general: 'Общее',
+      data:    'Данные',
+    },
+    translator:         'Переводчик',
+    translateEmail:     'E-mail для онлайн-перевода',
+    translateEmailHint: 'Необязательно. С ним лимит переводов в день в 10 раз больше',
+    translateEmailBad:  'Похоже, в адресе ошибка — без исправления он не используется',
+    about:              'О приложении',
     title:                'Настройки',
     interface:            'Интерфейс',
     theme:                'Тема',

@@ -3,7 +3,7 @@ import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppNav from '@/core/shell/AppNav.vue'
 import UiFeedbackHost from '@/shared/ui/UiFeedbackHost.vue'
-import { navIndex } from '@/core/shell/nav.js'
+import { slotOf } from '@/core/shell/nav.js'
 import { useSwipeNav } from '@/core/shell/useSwipeNav.js'
 
 const route  = useRoute()
@@ -12,12 +12,12 @@ const router = useRouter()
 // занятие (изучение, повторение) — во весь экран, без меню
 const immersive = computed(() => !!route.meta.immersive)
 
-// между разделами меню — сдвиг в сторону раздела, остальное — растворение
+// между разделами меню (и вкладками настроек) — сдвиг в сторону раздела, остальное — растворение
 const transition = ref('page')
 router.beforeEach((to, from) => {
-  const a = navIndex(from.name)
-  const b = navIndex(to.name)
-  transition.value = a === -1 || b === -1 || a === b ? 'page' : b > a ? 'slide-next' : 'slide-prev'
+  const a = slotOf(from, to)
+  const b = slotOf(to, from)
+  transition.value = !a || !b || a.row !== b.row || a.i === b.i ? 'page' : b.i > a.i ? 'slide-next' : 'slide-prev'
 })
 
 const mainRef = ref(null)
@@ -42,8 +42,8 @@ function onAfterEnter() {
     <div class="pages">
       <RouterView v-slot="{ Component, route: r }">
         <Transition :name="transition" @before-leave="onBeforeLeave" @after-enter="onAfterEnter">
-          <!-- ключ — экран; у книги ещё и её id, иначе из книги в книгу экран не пересоздастся -->
-        <div :key="r.params.id ? `${r.name}-${r.params.id}` : r.name" class="page">
+          <!-- ключ — экран; у книги ещё и её id, у настроек — вкладка, иначе экран не пересоздастся -->
+        <div :key="[r.name, r.params.id ?? r.params.tab].filter(Boolean).join('-')" class="page">
             <component :is="Component" />
           </div>
         </Transition>

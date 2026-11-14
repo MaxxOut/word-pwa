@@ -4,6 +4,7 @@ const CORE_DEFAULTS = {
   locale:     null,    // null — по языку телефона
   appearance: 'light', // тема: light | dark | system
   text_size:  'm',     // s | m | l | xl
+  translate_email: '', // онлайн-переводчик: с e-mail лимит больше (core/translate)
 }
 
 const moduleDefaults = import.meta.glob('../../modules/*/settings.js', { eager: true, import: 'defaults' })

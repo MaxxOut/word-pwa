@@ -4,13 +4,16 @@ import { parseWordsCsv } from '@/core/words/csv.js'
 
 export class TranslateLimitError extends Error {}
 
+// e-mail для лимита — только похожий на адрес: с опечаткой (name@) сервис может отказать во всём
+export const isEmail = value => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value ?? '')
+
 // MyMemory: без ключа, из браузера. Лимит — 5000 символов в день на IP
 // (с e-mail в параметре de — 50 000 на e-mail)
 export async function translateOnline(text, from, to, { email } = {}) {
   const url = new URL('https://api.mymemory.translated.net/get')
   url.searchParams.set('q', text)
   url.searchParams.set('langpair', `${from}|${to}`)
-  if (email) url.searchParams.set('de', email)
+  if (isEmail(email)) url.searchParams.set('de', email)
 
   const res  = await fetch(url)
   const data = await res.json().catch(() => null)

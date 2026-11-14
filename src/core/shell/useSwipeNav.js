@@ -1,7 +1,8 @@
 import { onMounted, onBeforeUnmount } from 'vue'
-import { NAV_ITEMS, navIndex } from '@/core/shell/nav.js'
+import { neighbourOf, slotOf } from '@/core/shell/nav.js'
 
-// свайп влево/вправо по экрану — соседний раздел меню; экран едет за пальцем.
+// свайп влево/вправо по экрану — соседний раздел меню (в настройках — соседняя вкладка);
+// экран едет за пальцем.
 // От самого края не ловим — там системный жест «назад».
 const EDGE      = 24   // px от края экрана
 const LOCK      = 10   // px, после которых понятно направление жеста
@@ -13,14 +14,10 @@ export function useSwipeNav(rootRef, router, route) {
   let dx = 0
   let horizontal = null
 
-  function neighbour(dir) {
-    const i = navIndex(route.name)
-    if (i === -1) return null
-    return NAV_ITEMS[i + dir]?.route ?? null
-  }
+  const neighbour = dir => neighbourOf(route, dir)
 
   function canStart(e) {
-    if (e.touches.length !== 1 || route.meta.immersive || navIndex(route.name) === -1) return false
+    if (e.touches.length !== 1 || route.meta.immersive || !slotOf(route)) return false
     const x = e.touches[0].clientX
     if (x < EDGE || x > window.innerWidth - EDGE) return false
     // поле ввода и всё, что отмечено data-no-swipe, не трогаем
@@ -68,7 +65,8 @@ export function useSwipeNav(rootRef, router, route) {
       // дальше — переход страницы (App.vue): уходящий едет из текущего положения,
       // новый — вплотную к нему
       rootRef.value.style.setProperty('--swipe-dx', `${dx}px`)
-      router.push({ name: target })
+      if (target.replace) router.replace(target.to)
+      else router.push(target.to)
       return
     }
     // не дотянули — вернуть на место

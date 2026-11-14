@@ -117,3 +117,16 @@ describe('база', () => {
     expect(composeSchema()).toEqual(SCHEMAS[SCHEMA_VERSION])
   })
 })
+
+describe('о приложении', async () => {
+  const { CHANGELOG } = await import('@/core/changelog.js')
+
+  it('у каждой версии пункты на обоих языках, новые сверху', () => {
+    for (const v of CHANGELOG) {
+      expect(v.items.ru.length, v.version).toBeGreaterThan(0)
+      expect(v.items.uk.length, v.version).toBe(v.items.ru.length)
+    }
+    const dates = CHANGELOG.map(v => v.date)
+    expect(dates).toEqual([...dates].sort().reverse())
+  })
+})

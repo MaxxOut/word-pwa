@@ -8,7 +8,9 @@ import SettingsView from '@/core/settings/SettingsView.vue'
 const routes = [
   { path: '/',         name: 'home',     component: HomeView },
   ...moduleRoutes,
-  { path: '/settings', name: 'settings', component: SettingsView },
+  // настройки — вкладками (core/shell/nav.js → SETTINGS_TABS)
+  { path: '/settings', redirect: '/settings/general' },
+  { path: '/settings/:tab', name: 'settings', component: SettingsView, props: true },
   { path: '/:pathMatch(.*)*', redirect: { name: 'home' } },
 ]
 

@@ -1,6 +1,7 @@
 <script setup>
 import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useSettingsStore } from '@/core/settings/store.js'
 import { toast } from '@/shared/ui/feedback.js'
 import UiButton from '@/shared/ui/UiButton.vue'
 import { translateOnline, googleTranslateUrl, parseAiLine, isPromptPasted, TranslateLimitError } from './translate.js'
@@ -19,6 +20,7 @@ const emit = defineEmits(['online', 'ai'])
 
 const i18n          = useI18n()
 const { t, locale } = i18n
+const settingsStore = useSettingsStore()
 
 const loading = ref(false)
 const pasting = ref(false) // промпт скопирован — ждём ответ
@@ -33,7 +35,8 @@ async function online() {
   if (!text()) return
   loading.value = true
   try {
-    emit('online', await translateOnline(text(), props.from, locale.value))
+    const email = settingsStore.settings.translate_email
+    emit('online', await translateOnline(text(), props.from, locale.value, { email }))
   } catch (err) {
     toast.error(t(err instanceof TranslateLimitError ? 'translate.limit' : 'translate.failed'))
   } finally {
