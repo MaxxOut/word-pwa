@@ -6,8 +6,19 @@ describe('parseWordsCsv', () => {
     const [row] = parseWordsCsv('﻿cat;кот|кошка;kæt;a cat|the cat\r\n')
     expect(row).toEqual({
       word: 'cat', translation: ['кот', 'кошка'], transcription: 'kæt',
-      examples: ['a cat', 'the cat'], progress: null,
+      examples: ['a cat', 'the cat'], progress: null, forms: null,
     })
+  })
+
+  it('reads and writes forms (column 9) with optional fields', () => {
+    const [row] = parseWordsCsv('go;идти;;;learned;;;;goes|went=пошёл, ушёл=[went]=прош. вр.')
+    expect(row.forms).toEqual([
+      { word: 'goes', translation: [], transcription: null, note: null },
+      { word: 'went', translation: ['пошёл', 'ушёл'], transcription: '[went]', note: 'прош. вр.' },
+    ])
+    const csv = stringifyWordsCsv([{ word: 'go', translation: ['идти'], forms: row.forms }])
+    expect(csv).toContain(';goes|went=пошёл, ушёл=[went]=прош. вр.')
+    expect(parseWordsCsv(csv)[0].forms).toEqual(row.forms)
   })
 
   it('handles quotes, separators and newlines inside fields', () => {

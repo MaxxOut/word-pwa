@@ -1,6 +1,7 @@
 // Слова: список, карточка слова, импорт/экспорт CSV
 import wordsIcon from '@material-symbols/svg-400/rounded/dictionary.svg?raw'
 import wordsFill from '@material-symbols/svg-400/rounded/dictionary-fill.svg?raw'
+import split from '@material-symbols/svg-400/rounded/call_split.svg?raw'
 import WordsView from './WordsView.vue'
 import EmptyTile from './home/EmptyTile.vue'
 import ProgressTile from './home/ProgressTile.vue'
@@ -16,5 +17,5 @@ export default {
     { component: ProgressTile, order: 40 },
   ],
   dataActions: [{ component: DataActions, order: 10 }],
-  icons:       { words: wordsIcon, 'words-fill': wordsFill },
+  icons:       { words: wordsIcon, 'words-fill': wordsFill, split },
 }

@@ -14,3 +14,10 @@ export class NotFoundError extends Error {
     this.name = 'NotFoundError'
   }
 }
+
+export class FormsLimitError extends Error {
+  constructor() {
+    super('Too many forms')
+    this.name = 'FormsLimitError'
+  }
+}

@@ -147,7 +147,7 @@ function onPaste() {
   color: var(--on);
   font: inherit;
   font-size: 0.875rem;
-  resize: vertical;
+  resize: none;
 }
 .area:focus { outline: none; border-color: var(--primary); }
 

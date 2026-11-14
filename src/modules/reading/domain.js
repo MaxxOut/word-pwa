@@ -73,3 +73,39 @@ export function exampleAround(tokens, k, max = 8) {
   if (start !== sStart || end !== sEnd) text = text.replace(/[,;:—–-]+$/, '')
   return text.trim()
 }
+
+// ----- возможная начальная форма (dogs → dog, worked → work, gemacht → machen) -----
+// Только кандидаты по окончаниям: что из них есть в словаре, решает вызывающий,
+// а присоединяет форму всегда пользователь — совпадение может быть случайным
+
+const EN_RULES = [
+  [/'s$/, ''], [/ies$/, 'y'], [/ied$/, 'y'], [/ier$/, 'y'], [/iest$/, 'y'],
+  [/es$/, ''], [/s$/, ''], [/ed$/, ''], [/ed$/, 'e'], [/ing$/, ''], [/ing$/, 'e'],
+  [/er$/, ''], [/est$/, ''], [/er$/, 'e'], [/est$/, 'e'],
+  // удвоенная согласная: stopped → stop, running → run, bigger → big
+  [/([bcdfgklmnprstvz])\1(ed|ing|er|est)$/, '$1'],
+]
+
+// немецкий: окончание прочь, к основе — варианты инфинитива и существительного
+const DE_ENDINGS = ['ern', 'ens', 'est', 'ten', 'te', 'en', 'er', 'es', 'st', 'et', 'em', 'e', 'n', 's', 't']
+
+function deStems(w) {
+  const stems = new Set()
+  for (const end of DE_ENDINGS) if (w.length > end.length + 2 && w.endsWith(end)) stems.add(w.slice(0, -end.length))
+  // Partizip II: gemacht → mach, gesehen → seh
+  const ge = w.match(/^ge(.+?)(t|en)$/)
+  if (ge && ge[1].length > 1) stems.add(ge[1])
+  return [...stems]
+}
+
+export function baseCandidates(text, lang) {
+  const w   = text.toLowerCase()
+  const out = new Set()
+  if (lang === 'de') {
+    for (const s of deStems(w)) [s, s + 'en', s + 'n', s + 'e'].forEach(c => out.add(c))
+  } else {
+    for (const [re, to] of EN_RULES) if (re.test(w)) out.add(w.replace(re, to))
+  }
+  out.delete(w)
+  return [...out].filter(c => c.length > 1)
+}

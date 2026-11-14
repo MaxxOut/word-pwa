@@ -1,11 +1,14 @@
-// CSV: «слово;перевод1|перевод2;транскрипция;пример1|пример2;статус;выучено;повторено;добавлено»
+// CSV: «слово;перевод1|перевод2;транскрипция;пример1|пример2;статус;выучено;повторено;добавлено;формы»
 // первые 4 колонки — формат старого бэкенда (fputcsv с разделителем ;), такие файлы
-// импортируются как новые слова. Остальные — прогресс: статус learned / ignored /
-// learned|ignored / пусто, даты в ISO. Файл экспорта = резервная копия библиотеки.
+// импортируются как новые слова. 5–8 — прогресс: статус learned / ignored /
+// learned|ignored / пусто, даты в ISO. 9 — формы слова: через |, поля формы через =
+// («форма=перевод1, перевод2=транскрипция=пометка», пустые хвосты можно опускать).
+// Файл экспорта = резервная копия библиотеки.
 
-const SEP  = ';'
-const LIST = '|'
-const BOM  = '﻿'
+const SEP   = ';'
+const LIST  = '|'
+const FIELD = '='
+const BOM   = '﻿'
 
 // разбор с учётом кавычек: "текст; с ""кавычками"""
 function parseRows(text) {
@@ -63,8 +66,31 @@ export function parseWordsCsv(text) {
       transcription: (transcription ?? '').trim() || null,
       examples:      splitList(examples),
       progress:      rest.length ? parseProgress(rest) : null,
+      // колонки форм нет — null: при замене формы слова не трогаются
+      forms:         rest.length >= 5 ? parseForms(rest[4]) : null,
     }))
     .filter(r => r.word)
+}
+
+// «dogs|went=пошёл, ушёл=[went]=прош. вр.» → [{ word, translation, transcription, note }]
+function parseForms(value) {
+  return splitList(value).map(item => {
+    const [word = '', translation = '', transcription = '', note = ''] = item.split(FIELD).map(s => s.trim())
+    return {
+      word,
+      translation:   translation.split(',').map(s => s.trim()).filter(Boolean),
+      transcription: transcription || null,
+      note:          note || null,
+    }
+  }).filter(f => f.word)
+}
+
+function stringifyForms(forms) {
+  return (forms ?? []).map(f => {
+    const fields = [f.word, (f.translation ?? []).join(', '), f.transcription ?? '', f.note ?? '']
+    while (fields.length > 1 && !fields.at(-1)) fields.pop()
+    return fields.join(FIELD)
+  }).join(LIST)
 }
 
 function statusOf(w) {
@@ -85,7 +111,9 @@ export function stringifyWordsCsv(words, { progress = true } = {}) {
     (w.translation ?? []).join(LIST),
     w.transcription ?? '',
     (w.examples ?? []).join(LIST),
-    ...(progress ? [statusOf(w), w.learned_at ?? '', w.repeated_at ?? '', w.created_at ?? ''] : []),
+    ...(progress
+      ? [statusOf(w), w.learned_at ?? '', w.repeated_at ?? '', w.created_at ?? '', stringifyForms(w.forms)]
+      : []),
   ].map(escape).join(SEP))
   return BOM + lines.join('\r\n') + '\r\n'
 }

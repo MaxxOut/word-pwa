@@ -52,6 +52,7 @@ export default {
     addWords:    'Добавить слова',
     translation: 'Перевод',
     updated:     'Слово обновлено',
+    formsLimit:  'У слова уже 5 форм',
   },
   translate: {
     online:          'Перевести',

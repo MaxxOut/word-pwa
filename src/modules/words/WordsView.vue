@@ -188,6 +188,7 @@ watch(libraryId, () => fetchWords(), { immediate: true })
           <span class="item-word">
             <b>{{ w.word }}</b>
             <span v-if="w.transcription" class="muted small">[{{ w.transcription }}]</span>
+            <span v-if="w.forms?.length" class="muted small">· {{ w.forms.map(f => f.word).join(', ') }}</span>
           </span>
           <span class="item-tr" :class="{ 'item-tr--none': !w.translation?.length }">
             {{ w.translation?.join(', ') || t('status.untranslated') }}

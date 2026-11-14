@@ -70,3 +70,22 @@ describe('слово из текста', async () => {
     expect(exampleAround(d, 1)).toBe('Diese Trauben will ich haben, sagt der Fuchs.')
   })
 })
+
+describe('baseCandidates', async () => {
+  const { baseCandidates } = await import('./domain.js')
+
+  it('English endings', () => {
+    for (const [form, base] of [
+      ['dogs', 'dog'], ['boxes', 'box'], ['studies', 'study'], ['tried', 'try'], ['worked', 'work'],
+      ['liked', 'like'], ['stopped', 'stop'], ['running', 'run'], ['making', 'make'], ['bigger', 'big'],
+      ['happier', 'happy'], ["dog's", 'dog'],
+    ]) expect(baseCandidates(form, 'en'), form).toContain(base)
+    expect(baseCandidates('go', 'en')).toEqual([])
+  })
+
+  it('German endings and Partizip II', () => {
+    for (const [form, base] of [
+      ['macht', 'machen'], ['machte', 'machen'], ['gemacht', 'machen'], ['Hunde', 'hund'], ['Kindern', 'kind'],
+    ]) expect(baseCandidates(form, 'de'), form).toContain(base)
+  })
+})

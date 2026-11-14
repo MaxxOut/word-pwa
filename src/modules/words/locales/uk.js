@@ -39,6 +39,15 @@ export default {
   addExample:             'Приклад',
   ignore:                 'Знаю',
   create:                 'Додати',
+  forms: {
+    title:           'Форми (dogs, went → go)',
+    word:            'Форма',
+    note:            'Позначка: мн., мин. ч.',
+    add:             'Форма',
+    detach:          'Зробити окремим словом',
+    detached:        'Створено слово «{word}»',
+    detachDuplicate: 'Слово «{word}» вже є в словнику',
+  },
   importDialog: {
     title:      'Імпорт слів',
     into:       'У бібліотеку',

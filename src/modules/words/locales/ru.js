@@ -39,6 +39,15 @@ export default {
   addExample:             'Пример',
   ignore:                 'Знаю',
   create:                 'Добавить',
+  forms: {
+    title:           'Формы (dogs, went → go)',
+    word:            'Форма',
+    note:            'Пометка: мн. ч., прош. вр.',
+    add:             'Форма',
+    detach:          'Сделать отдельным словом',
+    detached:        'Создано слово «{word}»',
+    detachDuplicate: 'Слово «{word}» уже есть в словаре',
+  },
   importDialog: {
     title:      'Импорт слов',
     into:       'В библиотеку',

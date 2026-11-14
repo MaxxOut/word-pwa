@@ -2,8 +2,8 @@
 import { ref, nextTick, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { wordsRepo } from '@/core/words/repo.js'
-import { DuplicateWordError } from '@/core/words/errors.js'
-import { cleanToken, exampleAround } from './domain.js'
+import { DuplicateWordError, FormsLimitError } from '@/core/words/errors.js'
+import { cleanToken, exampleAround, baseCandidates } from './domain.js'
 import { useLibraryStore } from '@/core/library/store.js'
 import TranslateActions from '@/core/translate/TranslateActions.vue'
 import { toast } from '@/shared/ui/feedback.js'
@@ -12,7 +12,8 @@ import AppIcon from '@/shared/components/AppIcon.vue'
 import UiButton from '@/shared/ui/UiButton.vue'
 
 // пузырь у нажатого слова: известное — слово и перевод (нет перевода — можно перевести);
-// новое — перевести и добавить в словарь.
+// записано формой другого слова — dogs → dog и перевод; новое — перевести и добавить в словарь
+// или присоединить формой к слову из словаря (варианты по окончаниям — только подсказка).
 // Под словом, а если снизу не влезает — над ним. Закрывается нажатием мимо и «Назад».
 const props = defineProps({
   libraryId: { type: String, required: true },
@@ -33,27 +34,40 @@ const error   = ref('')
 const aiRow   = ref(null) // ответ ИИ с другим словом (начальная форма) — ждёт подтверждения
 const saving  = ref(false)
 const opened  = ref(0)    // номер открытия: блок перевода пересоздаётся — старый ответ не попадёт к новому слову
+const viaForm = ref(null) // нажатое записано формой: { word, form }
+const clicked = ref('')   // нажатое слово как в тексте (без знаков)
+const suggestions = ref([]) // слова словаря, формой которых может быть нажатое (не больше 3)
+
+const MAX_SUGGESTIONS = 3
 
 const bubble = ref(null)
 const pos    = ref({ top: 0, left: 0, arrow: 0, above: false })
 
-let anchor = null // span слова
+let anchor  = null // span слова
+let request = 0    // номер нажатия: ответ по старому слову не перезапишет более позднее
 
 // el — span слова, tokens — слова абзаца, k — номер нажатого
 async function open(el, tokens, k) {
   const text = cleanToken(tokens[k])
   if (!text) return
+  const req   = ++request
   const known = await wordsRepo.find(props.libraryId, text)
+  const form  = known ? null : await wordsRepo.findByForm(props.libraryId, text)
+  const maybe = known || form ? [] : await suggest(text)
+  if (req !== request) return
 
   opened.value++
   found.value       = known
+  viaForm.value     = form
+  clicked.value     = text
+  suggestions.value = maybe
   translation.value = ''
   aiRow.value       = null
   // предложение — пример для словаря и подсказка ИИ, какое значение нужно
   example.value     = exampleAround(tokens, k)
   withExample.value = true
   // в английском заглавная — обычно начало предложения; в немецком — ещё и существительное
-  if (!known) word.value = props.libraryId === 'de' ? text : text.toLowerCase()
+  if (!known && !form) word.value = props.libraryId === 'de' ? text : text.toLowerCase()
   error.value = ''
 
   anchor?.classList.remove('w--on')
@@ -157,14 +171,49 @@ async function fromAi(row) {
   await addAiRow(row)
 }
 
-function addAiRow(row) {
+// ИИ вернул начальную форму: её — в словарь (или она уже там), нажатое — её формой
+// (нажатое уже отдельное слово без перевода — форму не делаем, начальная форма — просто новое слово)
+async function addAiRow(row) {
+  const formWord = word.value.trim() || clicked.value
+  const base     = found.value ? null : await wordsRepo.find(props.libraryId, row.word)
+  if (base) return attachTo(base)
   return save(() => wordsRepo.create(props.libraryId, {
     word:          row.word,
     translation:   row.translation,
     transcription: row.transcription,
     examples:      [...new Set([...bookExample(), ...row.examples])],
+    forms:         found.value ? [] : [{ word: formWord }],
   }), true)
 }
+
+// слова словаря, формой которых может быть нажатое: кандидаты по окончаниям, что есть в словаре
+async function suggest(text) {
+  const out = []
+  for (const c of baseCandidates(text, props.libraryId)) {
+    const w = await wordsRepo.find(props.libraryId, c)
+    if (w && !out.some(x => x.id === w.id)) out.push(w)
+    if (out.length === MAX_SUGGESTIONS) break
+  }
+  return out
+}
+
+// присоединить нажатое формой к слову словаря
+async function attachTo(target) {
+  const formWord = word.value.trim() || clicked.value
+  saving.value = true
+  error.value  = ''
+  try {
+    await wordsRepo.addForm(target.id, { word: formWord })
+    close()
+    toast.success(t('reading.formAdded', { form: formWord, word: target.word }))
+  } catch (err) {
+    if (err instanceof FormsLimitError) error.value = t('word.formsLimit')
+    else toast.error(t('errors.save'))
+  } finally {
+    saving.value = false
+  }
+}
+
 
 async function save(action, created) {
   saving.value = true
@@ -201,8 +250,17 @@ defineExpose({ open, close })
           :style="{ top: `${pos.top}px`, left: `${pos.left}px`, '--arrow': `${pos.arrow}px` }"
           role="dialog"
       >
+        <!-- записано формой другого слова: dogs → dog -->
+        <template v-if="viaForm">
+          <div class="word">{{ viaForm.form.word }} <span class="muted">→</span> {{ viaForm.word.word }}</div>
+          <div v-if="viaForm.form.translation.length || viaForm.form.note" class="muted small">
+            {{ [viaForm.form.translation.join(', '), viaForm.form.note].filter(Boolean).join(' · ') }}
+          </div>
+          <div class="translation">{{ viaForm.word.translation?.join(', ') || t('status.untranslated') }}</div>
+        </template>
+
         <!-- известное слово -->
-        <template v-if="found && found.translation?.length">
+        <template v-else-if="found && found.translation?.length">
           <b class="word">{{ found.word }}</b>
           <div class="translation">{{ found.translation.join(', ') }}</div>
         </template>
@@ -210,15 +268,18 @@ defineExpose({ open, close })
         <!-- известное без перевода — перевести и сохранить -->
         <form v-else-if="found" class="add" @submit.prevent="saveTranslation">
           <b class="word">{{ found.word }}</b>
-          <input
-              v-model="translation"
-              class="tr-input"
-              :placeholder="t('status.untranslated')"
-              :aria-label="t('word.translation')"
-              autocomplete="off"
-          >
-          <TranslateActions :key="opened" :word="found.word" :from="libraryId" :context="example" @online="translation = $event" @ai="fromAi" />
-          <div v-if="error" class="error small">{{ error }}</div>
+          <div class="muted translation translation--none">{{ t('status.untranslated') }}</div>
+          <div class="part">
+            <input
+                v-model="translation"
+                class="tr-input"
+                :placeholder="t('word.translation')"
+                :aria-label="t('word.translation')"
+                autocomplete="off"
+            >
+            <TranslateActions :key="opened" :word="found.word" :from="libraryId" :context="example" @online="translation = $event" @ai="fromAi" />
+            <div v-if="error" class="error small">{{ error }}</div>
+          </div>
           <!-- ответ ИИ про другое слово — сохранить его новым словом или отменить -->
           <div v-if="aiRow" class="choose">
             <div class="muted small">{{ t('reading.aiBaseForm') }}</div>
@@ -244,15 +305,19 @@ defineExpose({ open, close })
               autocapitalize="off"
               spellcheck="false"
           >
-          <input
-              v-model="translation"
-              class="tr-input"
-              :placeholder="t('word.translation')"
-              :aria-label="t('word.translation')"
-              autocomplete="off"
-          >
-          <TranslateActions :key="opened" :word="word" :from="libraryId" :context="example" @online="translation = $event" @ai="fromAi" />
-          <div v-if="error" class="error small">{{ error }}</div>
+          <div class="muted translation translation--none">{{ t('status.untranslated') }}</div>
+
+          <!-- может быть формой слова из словаря: присоединяет только пользователь -->
+          <div v-if="suggestions.length" class="part">
+            <div class="muted small">{{ t('reading.maybe') }}</div>
+            <div v-for="s in suggestions" :key="s.id" class="maybe-row">
+              <span class="grow"><b>{{ s.word }}</b> — {{ s.translation?.join(', ') || t('status.untranslated') }}</span>
+              <UiButton class="small-btn" variant="tonal" icon="add" :disabled="saving" @click="attachTo(s)">
+                {{ t('reading.asForm') }}
+              </UiButton>
+            </div>
+          </div>
+
           <label v-if="example" class="example">
             <input v-model="withExample" type="checkbox" class="sr-only">
             <span class="box" :class="{ 'box--on': withExample }">
@@ -261,10 +326,25 @@ defineExpose({ open, close })
             <span class="muted small">{{ t('reading.addExample') }}</span>
             <span class="example-text">{{ example }}</span>
           </label>
+
+          <!-- перевод — у кнопки -->
+          <div class="part">
+            <input
+                v-model="translation"
+                class="tr-input"
+                :placeholder="t('word.translation')"
+                :aria-label="t('word.translation')"
+                autocomplete="off"
+            >
+            <TranslateActions :key="opened" :word="word" :from="libraryId" :context="example" @online="translation = $event" @ai="fromAi" />
+            <div v-if="error" class="error small">{{ error }}</div>
+          </div>
+
           <!-- ИИ вернул начальную форму — сохранить её или отменить -->
           <div v-if="aiRow" class="choose">
             <div class="muted small">{{ t('reading.aiBaseForm') }}</div>
             <div><b>{{ aiRow.word }}</b> — {{ aiRow.translation.join(', ') }}</div>
+            <div class="muted small">{{ t('reading.aiFormNote', { form: word.trim() || clicked }) }}</div>
             <div class="choose-buttons">
               <UiButton variant="text" @click="aiRow = null">{{ t('reading.cancel') }}</UiButton>
               <UiButton variant="filled" :loading="saving" @click="addAiRow(aiRow)">{{ t('common.save') }}</UiButton>
@@ -351,6 +431,17 @@ defineExpose({ open, close })
 .error { color: var(--error); }
 
 .choose { display: grid; gap: 0.375rem; }
+
+/* части пузыря (варианты формы, перевод) отделены пунктиром — как слово в заголовке */
+.part {
+  display: grid;
+  gap: 0.375rem;
+  padding-top: 0.5rem;
+  border-top: 1px dashed var(--outline);
+}
+.maybe-row { display: flex; align-items: center; gap: 0.5rem; font-size: 0.9375rem; }
+.small-btn { min-height: 2rem; padding: 0.125rem 0.625rem; font-size: 0.8125rem; }
+
 .choose-buttons { display: flex; justify-content: flex-end; gap: 0.5rem; }
 
 .example {

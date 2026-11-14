@@ -58,3 +58,17 @@ describe('import', () => {
     expect((await byWord('en')).cat.learned_at).toBeTruthy()
   })
 })
+
+describe('import: forms', () => {
+  it('backup restores forms; a file without the forms column keeps them', async () => {
+    const go = await words.create('en', { word: 'go', translation: ['идти'], forms: [{ word: 'went', translation: ['пошёл'] }] })
+    const csv = stringifyWordsCsv(await words.all('en'))
+    await libraries.clear('en')
+    await words.import('en', parseWordsCsv(csv))
+    expect((await words.findByForm('en', 'went')).word.word).toBe('go')
+
+    await words.import('en', parseWordsCsv('go;идти, ходить'), 'replace')
+    expect((await words.findByForm('en', 'went')).form.translation).toEqual(['пошёл'])
+    expect(go).toBeTruthy()
+  })
+})

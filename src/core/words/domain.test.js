@@ -27,3 +27,13 @@ describe('wordStats', () => {
     ])).toEqual({ words: 4, learned: 1, ignored: 1, untranslated: 1, new: 1 })
   })
 })
+
+describe('normalizeForms', async () => {
+  const { normalizeForms } = await import('./domain.js')
+
+  it('replaces CSV separators inside form fields', () => {
+    expect(normalizeForms([{ word: 'went', translation: ['пошёл|ушёл'], note: 'разг. = colloq.' }])).toEqual([
+      { word: 'went', translation: ['пошёл/ушёл'], transcription: null, note: 'разг. - colloq.' },
+    ])
+  })
+})

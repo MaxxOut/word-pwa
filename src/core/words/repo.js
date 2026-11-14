@@ -3,8 +3,8 @@
 import { db } from '@/core/db.js'
 import { uuid } from '@/shared/utils/uuid.js'
 import { nowIso } from '@/shared/utils/dates.js'
-import { DuplicateWordError, NotFoundError } from './errors.js'
-import { normalizeWord, wordStatus } from './domain.js'
+import { DuplicateWordError, NotFoundError, FormsLimitError } from './errors.js'
+import { normalizeWord, wordStatus, normalizeForms, formKeys, MAX_FORMS } from './domain.js'
 
 const SORT_FIELDS = ['word', 'created_at', 'learned_at', 'repeated_at']
 
@@ -23,6 +23,14 @@ async function findDuplicate(libraryId, text, exceptId = null) {
   return found && found.id !== exceptId ? found : null
 }
 
+// формы + ключи индекса — всегда вместе
+function formsPatch(libraryId, forms, word) {
+  const clean = normalizeForms(forms, word)
+  return { forms: clean, form_keys: formKeys(libraryId, clean) }
+}
+
+const hasForm = (w, q) => (w.forms ?? []).some(f => normalizeWord(f.word).includes(q))
+
 // ----- слова -----
 
 export const wordsRepo = {
@@ -37,7 +45,8 @@ export const wordsRepo = {
     if (statuses.length)    list = list.filter(w => statuses.includes(wordStatus(w)))
     if (search.trim()) {
       const q = normalizeWord(search)
-      list = list.filter(w => w.word_lc.includes(q))
+      // и по формам: ищу dogs — вижу dog
+      list = list.filter(w => w.word_lc.includes(q) || hasForm(w, q))
     }
 
     const field = SORT_FIELDS.includes(sort) ? sort : 'created_at'
@@ -60,6 +69,42 @@ export const wordsRepo = {
     return (await findDuplicate(libraryId, text)) ?? null
   },
 
+  // слово, у которого text записан формой: { word, form } или null
+  async findByForm(libraryId, text) {
+    const key  = `${libraryId}:${normalizeWord(text)}`
+    const word = await db.words.where('form_keys').equals(key).first()
+    if (!word) return null
+    return { word, form: word.forms.find(f => normalizeWord(f.word) === normalizeWord(text)) }
+  },
+
+  // присоединить форму к слову (из книги: dogs → dog). Уже есть — ничего не меняем
+  async addForm(id, form) {
+    const word = await db.words.get(id)
+    if (!word) throw new NotFoundError(`word ${id}`)
+    const forms = word.forms ?? []
+    if (forms.some(f => normalizeWord(f.word) === normalizeWord(form.word))) return word
+    if (forms.length >= MAX_FORMS) throw new FormsLimitError()
+    return wordsRepo.update(id, { forms: [...forms, form] })
+  },
+
+  // выделить форму в отдельное слово: новое слово из её текста, перевода и транскрипции,
+  // из форм она убирается. Такое слово уже есть — DuplicateWordError, ничего не меняется.
+  // fields — перевод и транскрипция из карточки, если их поправили и ещё не сохранили
+  async detachForm(id, formText, fields = null) {
+    return db.transaction('rw', db.words, async () => {
+      const word = await db.words.get(id)
+      const form = word?.forms?.find(f => normalizeWord(f.word) === normalizeWord(formText))
+      if (!form) throw new NotFoundError(`form ${formText} of ${id}`)
+      const created = await wordsRepo.create(word.library_id, {
+        word:          form.word,
+        translation:   fields?.translation ?? form.translation,
+        transcription: fields?.transcription ?? form.transcription,
+      })
+      const updated = await wordsRepo.update(id, { forms: word.forms.filter(f => f !== form) })
+      return { word: updated, created }
+    })
+  },
+
   async create(libraryId, data) {
     const text = data.word.trim()
     if (await findDuplicate(libraryId, text)) throw new DuplicateWordError(text)
@@ -77,6 +122,7 @@ export const wordsRepo = {
       is_ignored:    false,
       learned_at:    null,
       repeated_at:   null,
+      ...formsPatch(libraryId, data.forms, text),
       created_at:    now,
       updated_at:    now,
     }
@@ -100,6 +146,9 @@ export const wordsRepo = {
     if (data.examples      !== undefined) patch.examples      = cleanList(data.examples)
     if (data.transcription !== undefined) patch.transcription = data.transcription?.trim() || null
     if (data.is_ignored    !== undefined) patch.is_ignored    = !!data.is_ignored
+    if (data.forms         !== undefined) {
+      Object.assign(patch, formsPatch(word.library_id, data.forms, patch.word ?? word.word))
+    }
     // отметили или сняли «Знаю» — «нужно закрепить» (модуль study) больше не действует
     if (data.is_ignored !== undefined && !!data.is_ignored !== word.is_ignored) patch.repeat_soon_at = null
 
@@ -140,6 +189,8 @@ export const wordsRepo = {
           translation:   cleanList(row.translation),
           transcription: row.transcription || null,
           examples:      cleanList(row.examples),
+          // колонки форм нет (старый файл, экспорт без прогресса) — формы не трогаем
+          ...(row.forms ? formsPatch(libraryId, row.forms, row.word) : {}),
         }
         const progress = row.progress && progressFrom(row.progress, now)
 
@@ -153,7 +204,7 @@ export const wordsRepo = {
         }
 
         const word = {
-          id: uuid(), library_id: libraryId, word_lc: key, ...content,
+          id: uuid(), library_id: libraryId, word_lc: key, forms: [], form_keys: [], ...content,
           is_learned: false, is_ignored: false,
           learned_at: null, repeated_at: null,
           ...progress,

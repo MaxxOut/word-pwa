@@ -109,7 +109,8 @@ input, textarea {
   font-size: 1rem;
   padding: 0.75rem 0;
 }
-textarea { resize: vertical; min-height: 4rem; }
+/* без ручки размера: на телефоне по ней постоянно попадали */
+textarea { resize: none; min-height: 4rem; }
 input::placeholder, textarea::placeholder { color: var(--muted); opacity: 0.7; }
 
 .field-icon { color: var(--muted); }
