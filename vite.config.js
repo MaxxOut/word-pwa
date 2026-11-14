@@ -1,3 +1,4 @@
+import { fileURLToPath, URL } from 'node:url'
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { VitePWA } from 'vite-plugin-pwa'
@@ -39,6 +40,10 @@ export default defineConfig({
       },
     }),
   ],
+  resolve: {
+    // @/ — от src: импорты не зависят от того, где лежит файл
+    alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
+  },
   // относительные пути — сборка работает из любой папки (GitHub Pages: /repo/)
   base: './',
   define: {

@@ -1,22 +1,11 @@
-<script setup>
+<script>
 // единая точка для иконок: экраны используют имена, а не конкретный набор.
 // Material Symbols Rounded — SVG из npm, в сборку попадают только перечисленные.
-import { computed } from 'vue'
+// Здесь — общие иконки; модули добавляют свои через registerIcons (поле icons в index.js модуля)
 import home        from '@material-symbols/svg-400/rounded/home.svg?raw'
 import homeFill    from '@material-symbols/svg-400/rounded/home-fill.svg?raw'
-import words       from '@material-symbols/svg-400/rounded/dictionary.svg?raw'
-import wordsFill   from '@material-symbols/svg-400/rounded/dictionary-fill.svg?raw'
-import study       from '@material-symbols/svg-400/rounded/school.svg?raw'
-import repeat      from '@material-symbols/svg-400/rounded/replay.svg?raw'
 import settings    from '@material-symbols/svg-400/rounded/settings.svg?raw'
 import settingsFill from '@material-symbols/svg-400/rounded/settings-fill.svg?raw'
-import reading     from '@material-symbols/svg-400/rounded/menu_book.svg?raw'
-import readingFill from '@material-symbols/svg-400/rounded/menu_book-fill.svg?raw'
-import castle      from '@material-symbols/svg-400/rounded/castle.svg?raw'
-import science     from '@material-symbols/svg-400/rounded/science.svg?raw'
-import coffee      from '@material-symbols/svg-400/rounded/coffee.svg?raw'
-import code        from '@material-symbols/svg-400/rounded/code.svg?raw'
-import toc         from '@material-symbols/svg-400/rounded/toc.svg?raw'
 import add         from '@material-symbols/svg-400/rounded/add.svg?raw'
 import edit        from '@material-symbols/svg-400/rounded/edit.svg?raw'
 import del         from '@material-symbols/svg-400/rounded/delete.svg?raw'
@@ -45,10 +34,6 @@ import autoMode    from '@material-symbols/svg-400/rounded/brightness_auto.svg?r
 
 const ICONS = {
   home, 'home-fill': homeFill,
-  words, 'words-fill': wordsFill,
-  study, repeat,
-  reading, 'reading-fill': readingFill,
-  castle, science, coffee, code, toc,
   settings, 'settings-fill': settingsFill,
   add, edit, delete: del, back, close, speak,
   import: importIcon, export: exportIcon,
@@ -56,6 +41,17 @@ const ICONS = {
   filter, schedule, south, north,
   light: lightMode, dark: darkMode, system: autoMode,
 }
+
+export function registerIcons(icons) {
+  for (const [name, svg] of Object.entries(icons)) {
+    if (name in ICONS && ICONS[name] !== svg) throw new Error(`icon "${name}" is already registered`)
+    ICONS[name] = svg
+  }
+}
+</script>
+
+<script setup>
+import { computed } from 'vue'
 
 const props = defineProps({
   name: { type: String, required: true },

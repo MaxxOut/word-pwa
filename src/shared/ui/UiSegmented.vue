@@ -1,5 +1,5 @@
 <script setup>
-import AppIcon from '../components/AppIcon.vue'
+import AppIcon from '@/shared/components/AppIcon.vue'
 
 // выбор одного из 2–4 вариантов отдельными чипами. options: [{ value, label, icon? }]
 const model = defineModel({ type: [String, Number, null], default: null })

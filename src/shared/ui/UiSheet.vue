@@ -1,7 +1,7 @@
 <script setup>
 import { ref, watch, onBeforeUnmount, useId } from 'vue'
-import UiIconButton from './UiIconButton.vue'
-import { pushLayer, popLayer, nextZ } from './backClose.js'
+import UiIconButton from '@/shared/ui/UiIconButton.vue'
+import { pushLayer, popLayer, nextZ } from '@/shared/ui/backClose.js'
 
 // на телефоне — шторка снизу, на широком экране — диалог по центру.
 // dialog — всегда по центру (подтверждения)

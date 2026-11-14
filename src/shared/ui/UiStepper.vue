@@ -1,5 +1,5 @@
 <script setup>
-import UiIconButton from './UiIconButton.vue'
+import UiIconButton from '@/shared/ui/UiIconButton.vue'
 
 // число кнопками − / + : на телефоне удобнее, чем поле ввода
 const model = defineModel({ type: Number, required: true })

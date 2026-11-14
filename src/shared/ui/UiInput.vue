@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, useId, useAttrs } from 'vue'
-import AppIcon from '../components/AppIcon.vue'
+import AppIcon from '@/shared/components/AppIcon.vue'
 
 // атрибуты (autocomplete, inputmode…) — на сам input, class и style — на обёртку
 defineOptions({ inheritAttrs: false })

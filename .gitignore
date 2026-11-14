@@ -5,3 +5,7 @@ dist/
 *.log
 .DS_Store
 docs/
+
+# правила и скиллы Claude — приватно, как docs/
+CLAUDE.md
+.claude/

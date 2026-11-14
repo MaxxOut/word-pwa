@@ -1,9 +1,9 @@
 <script setup>
 import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { feedback } from './feedback.js'
-import UiSheet from './UiSheet.vue'
-import UiButton from './UiButton.vue'
+import { feedback } from '@/shared/ui/feedback.js'
+import UiSheet from '@/shared/ui/UiSheet.vue'
+import UiButton from '@/shared/ui/UiButton.vue'
 
 const { t } = useI18n()
 

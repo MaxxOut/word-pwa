@@ -1,5 +1,5 @@
 <script setup>
-import AppIcon from '../components/AppIcon.vue'
+import AppIcon from '@/shared/components/AppIcon.vue'
 
 defineProps({
   icon:  { type: String, default: 'words' },

@@ -1,5 +1,5 @@
 <script setup>
-import UiIconButton from './UiIconButton.vue'
+import UiIconButton from '@/shared/ui/UiIconButton.vue'
 
 // кнопка панели фильтров в шапке; точка — фильтр включён, но панель свёрнута
 const open = defineModel({ type: Boolean, default: false })

@@ -1,5 +1,5 @@
 <script setup>
-import AppIcon from '../components/AppIcon.vue'
+import AppIcon from '@/shared/components/AppIcon.vue'
 
 // label обязателен — для экранных дикторов и подсказки
 defineProps({
