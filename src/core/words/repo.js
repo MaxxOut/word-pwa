@@ -100,12 +100,15 @@ export const wordsRepo = {
     if (data.examples      !== undefined) patch.examples      = cleanList(data.examples)
     if (data.transcription !== undefined) patch.transcription = data.transcription?.trim() || null
     if (data.is_ignored    !== undefined) patch.is_ignored    = !!data.is_ignored
+    // отметили или сняли «Знаю» — «нужно закрепить» (модуль study) больше не действует
+    if (data.is_ignored !== undefined && !!data.is_ignored !== word.is_ignored) patch.repeat_soon_at = null
 
     // отметили выученным — ставим дату; сняли отметку — сбрасываем даты
     if (data.is_learned !== undefined && !!data.is_learned !== word.is_learned) {
       patch.is_learned  = !!data.is_learned
       patch.learned_at  = data.is_learned ? nowIso() : null
       patch.repeated_at = null
+      patch.repeat_soon_at = null
     }
 
     await db.words.update(id, patch)
@@ -175,5 +178,7 @@ function progressFrom(p, now) {
     is_ignored:  p.is_ignored,
     learned_at:  p.is_learned ? (p.learned_at ?? now) : null,
     repeated_at: p.is_learned || p.is_ignored ? p.repeated_at : null,
+    // «нужно закрепить» (модуль study) в CSV не хранится — после импорта обычный график
+    repeat_soon_at: null,
   }
 }

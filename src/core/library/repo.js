@@ -32,7 +32,7 @@ export const librariesRepo = {
     const tables = moduleTables('reset')
     await db.transaction('rw', db.words, ...tables, async () => {
       await db.words.where('library_id').equals(id).modify({
-        is_learned: false, learned_at: null, repeated_at: null, updated_at: nowIso(),
+        is_learned: false, learned_at: null, repeated_at: null, repeat_soon_at: null, updated_at: nowIso(),
       })
       for (const t of tables) await t.where('library_id').equals(id).delete()
     })

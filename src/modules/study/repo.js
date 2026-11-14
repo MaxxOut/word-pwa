@@ -2,7 +2,7 @@
 import { db } from '@/core/db.js'
 import { settingsRepo } from '@/core/settings/repo.js'
 import { nowIso, localDate, lastDays } from '@/shared/utils/dates.js'
-import { pickForStudy, pickForRepeat, pickExtra } from './domain.js'
+import { pickForStudy, pickForRepeat, pickExtra, soonDueAt, OUTCOME } from './domain.js'
 
 function wordsOf(libraryId) {
   return db.words.where('library_id').equals(libraryId).toArray()
@@ -57,15 +57,38 @@ export const repeatRepo = {
     }
   },
 
-  async complete(libraryId, repeatedIds, failedIds) {
-    const now = nowIso()
+  // outcomes — { id слова: OUTCOME } (см. domain.js)
+  async complete(libraryId, outcomes) {
+    const now  = nowIso()
+    const soon = soonDueAt()
+    const ids  = kind => Object.keys(outcomes).filter(id => outcomes[id] === kind)
+
     await db.transaction('rw', db.words, db.sessions, async () => {
-      await db.words.where('id').anyOf(repeatedIds).modify({ repeated_at: now, updated_at: now })
-      // проваленные — обратно в невыученные (и «Знаю» тоже — значит, не так уж и знаю)
-      await db.words.where('id').anyOf(failedIds).modify({
-        is_learned: false, is_ignored: false, learned_at: null, repeated_at: null, updated_at: now,
+      // «Знаю» остаётся «Знаю»
+      await db.words.where('id').anyOf(ids(OUTCOME.KNOWN)).modify({
+        repeated_at: now, repeat_soon_at: null, updated_at: now,
       })
-      await addToSession(libraryId, 'words_repeated', repeatedIds.length)
+      // помню — обычный график; «Знаю» с ошибкой становится обычным выученным
+      await db.words.where('id').anyOf(ids(OUTCOME.OK)).modify(w => {
+        Object.assign(w, {
+          is_learned: true, is_ignored: false, learned_at: w.learned_at ?? now,
+          repeated_at: now, repeat_soon_at: null, updated_at: now,
+        })
+      })
+      // нужно закрепить — выученное, но вне очереди
+      await db.words.where('id').anyOf(ids(OUTCOME.SOON)).modify(w => {
+        Object.assign(w, {
+          is_learned: true, is_ignored: false, learned_at: w.learned_at ?? now,
+          repeated_at: now, repeat_soon_at: soon, updated_at: now,
+        })
+      })
+      // заново — обратно в новые
+      await db.words.where('id').anyOf(ids(OUTCOME.NEW)).modify({
+        is_learned: false, is_ignored: false, learned_at: null, repeated_at: null,
+        repeat_soon_at: null, updated_at: now,
+      })
+      const repeated = Object.values(outcomes).filter(o => o !== OUTCOME.NEW).length
+      await addToSession(libraryId, 'words_repeated', repeated)
     })
   },
 }

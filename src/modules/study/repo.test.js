@@ -19,13 +19,34 @@ describe('study and repeat', () => {
     expect((await db.words.get(a.id)).is_learned).toBe(true)
     expect(await db.sessions.get(['en', localDate()])).toMatchObject({ words_studied: 2, words_repeated: 0 })
 
-    await repeat.complete('en', [a.id], [b.id])
+    await repeat.complete('en', { [a.id]: 'ok', [b.id]: 'new' })
     expect((await db.words.get(a.id)).repeated_at).toBeTruthy()
     expect(await db.words.get(b.id)).toMatchObject({ is_learned: false, learned_at: null })
     expect(await db.sessions.get(['en', localDate()])).toMatchObject({ words_studied: 2, words_repeated: 1 })
 
     const days = await activity('en', 7)
     expect(days.at(-1)).toEqual({ date: localDate(), studied: 2, repeated: 1 })
+  })
+
+  it('repeat outcomes: known stays known, ok turns known into learned, soon waits for tomorrow', async () => {
+    const k1 = await words.create('en', { word: 'cat', translation: ['кот'] })
+    const k2 = await words.create('en', { word: 'dog', translation: ['собака'] })
+    const l  = await words.create('en', { word: 'sun', translation: ['солнце'] })
+    await words.update(k1.id, { is_ignored: true })
+    await words.update(k2.id, { is_ignored: true })
+    await study.complete('en', [l.id])
+
+    await repeat.complete('en', { [k1.id]: 'known', [k2.id]: 'ok', [l.id]: 'soon' })
+    expect(await db.words.get(k1.id)).toMatchObject({ is_ignored: true, repeat_soon_at: null })
+    expect(await db.words.get(k2.id)).toMatchObject({ is_ignored: false, is_learned: true })
+    const sun = await db.words.get(l.id)
+    expect(sun).toMatchObject({ is_learned: true })
+    expect(new Date(sun.repeat_soon_at) > new Date()).toBe(true)
+    expect(await db.sessions.get(['en', localDate()])).toMatchObject({ words_repeated: 3 })
+
+    // удачный повтор снимает «нужно закрепить»
+    await repeat.complete('en', { [l.id]: 'ok' })
+    expect((await db.words.get(l.id)).repeat_soon_at).toBeNull()
   })
 
   // sessions объявлена в schema.js с library: ['reset', 'clear'] — ядро чистит её само

@@ -11,7 +11,8 @@ import UiButton from '@/shared/ui/UiButton.vue'
 import UiEmpty from '@/shared/ui/UiEmpty.vue'
 import UiSpinner from '@/shared/ui/UiSpinner.vue'
 import StageHeader from './stages/StageHeader.vue'
-import StudyResult from './stages/StudyResult.vue'
+import RepeatResult from './stages/RepeatResult.vue'
+import { defaultOutcome } from './domain.js'
 
 const router        = useRouter()
 const { t }         = useI18n()
@@ -26,7 +27,7 @@ const finished     = ref(false)
 const notEnough    = ref(null) // { required, count }
 const repeatWords  = ref([])
 const extraWords   = ref([])
-const failedIds    = ref(new Set())
+const outcomes     = ref({}) // { id: OUTCOME } — итог по словам, заполняется к экрану итога
 
 const step       = ref('stages')
 const stageIndex = ref(0)
@@ -45,7 +46,8 @@ async function fetchWords() {
     }
     repeatWords.value = data.words.map(w => ({ ...w, has_error: false }))
     extraWords.value  = data.extraWords
-    step.value        = stages.value.length ? 'stages' : 'result'
+    if (stages.value.length) step.value = 'stages'
+    else showResult()
   } catch {
     toast.error(t('errors.load'))
   } finally {
@@ -55,26 +57,23 @@ async function fetchWords() {
 
 function onStageDone(errorIds) {
   errorIds.forEach(id => {
-    failedIds.value.add(id)
     const word = repeatWords.value.find(w => w.id === id)
     if (word) word.has_error = true
   })
 
   if (stageIndex.value < stages.value.length - 1) stageIndex.value++
-  else step.value = 'result'
+  else showResult()
 }
 
-function toggleResult(id) {
-  if (failedIds.value.has(id)) failedIds.value.delete(id)
-  else failedIds.value.add(id)
+function showResult() {
+  outcomes.value = Object.fromEntries(repeatWords.value.map(w => [w.id, defaultOutcome(w)]))
+  step.value     = 'result'
 }
 
 async function completeSession() {
   saving.value = true
   try {
-    const repeated = repeatWords.value.filter(w => !failedIds.value.has(w.id)).map(w => w.id)
-    const failed   = repeatWords.value.filter(w => failedIds.value.has(w.id)).map(w => w.id)
-    await repeatRepo.complete(library.current.id, repeated, failed)
+    await repeatRepo.complete(library.current.id, outcomes.value)
     finished.value = true
     toast.success(t('study.repeat.completed'))
     router.push({ name: 'home' })
@@ -129,12 +128,12 @@ onMounted(fetchWords)
       @exit="exit"
   />
 
-  <StudyResult
+  <RepeatResult
       v-else-if="step === 'result'"
       :words="repeatWords"
-      :failed-ids="failedIds"
+      :outcomes="outcomes"
       :saving="saving"
-      @toggle="toggleResult"
+      @set="(id, o) => outcomes[id] = o"
       @complete="completeSession"
       @exit="exit"
   />

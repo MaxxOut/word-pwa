@@ -16,6 +16,13 @@ export default {
     notEnough: 'Пока нечего повторять',
     required:  'Нужно минимум {n} слов, готовых к повторению',
     readyNow:  'Сейчас готово: {n}',
+    remembered: 'помню',
+    outcome: {
+      ok:    'Помню',
+      known: 'Знаю',
+      soon:  'Нужно закрепить',
+      new:   'Учить заново',
+    },
   },
   result: {
     title:         'Итог сессии',

@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { pickForStudy, pickExtra, isDue, pickForRepeat, dueCount } from './domain.js'
+import {
+  pickForStudy, pickExtra, isDue, pickForRepeat, dueCount, soonDueAt, defaultOutcome, OUTCOME,
+} from './domain.js'
 
 const NOW = new Date('2026-03-10T12:00:00')
 const RS  = { words_per_session: 2, days_after_learning: 2, days_after_repeat: 5 }
@@ -96,5 +98,35 @@ describe('слова «Знаю»', () => {
 
   it('идут в отвлекалки', () => {
     expect(pickExtra([w({ word: 'cat', is_ignored: true })]).map(x => x.id)).toEqual(['cat'])
+  })
+})
+
+describe('повторить вне очереди', () => {
+  it('срок — не раньше следующего дня и не раньше чем через 6 часов', () => {
+    expect(soonDueAt(new Date('2026-03-10T23:50:00'))).toBe(new Date('2026-03-11T05:50:00').toISOString())
+    expect(soonDueAt(new Date('2026-03-10T10:00:00'))).toBe(new Date('2026-03-11T00:00:00').toISOString())
+  })
+
+  it('слово с наступившим сроком пора повторять и оно первое в очереди', () => {
+    const soon = w({ word: 'soon', is_learned: true, learned_at: daysBefore(1), repeated_at: daysBefore(1),
+      repeat_soon_at: daysBefore(0.1) })
+    const later = w({ word: 'later', is_learned: true, learned_at: daysBefore(1), repeat_soon_at: new Date(NOW.getTime() + 3600000).toISOString() })
+    const old = w({ word: 'old', is_learned: true, learned_at: daysBefore(40), repeated_at: daysBefore(20) })
+    expect(isDue(soon, RS, NOW)).toBe(true)
+    expect(isDue(later, RS, NOW)).toBe(false)
+    expect(pickForRepeat([old, later, soon], RS, NOW).words.map(x => x.word)).toEqual(['soon', 'old'])
+  })
+
+  it('у «Знаю» и слов без перевода не действует', () => {
+    const past = daysBefore(0.1)
+    expect(isDue(w({ is_learned: true, is_ignored: true, learned_at: daysBefore(1), repeated_at: daysBefore(1), repeat_soon_at: past }), RS, NOW)).toBe(false)
+    expect(isDue(w({ is_learned: true, translation: [], learned_at: daysBefore(1), repeated_at: daysBefore(1), repeat_soon_at: past }), RS, NOW)).toBe(false)
+  })
+
+  it('итог по умолчанию', () => {
+    expect(defaultOutcome(w({ is_learned: true }))).toBe(OUTCOME.OK)
+    expect(defaultOutcome(w({ is_learned: true, has_error: true }))).toBe(OUTCOME.SOON)
+    expect(defaultOutcome(w({ is_ignored: true }))).toBe(OUTCOME.KNOWN)
+    expect(defaultOutcome(w({ is_ignored: true, has_error: true }))).toBe(OUTCOME.OK)
   })
 })
