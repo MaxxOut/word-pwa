@@ -102,7 +102,8 @@ const iconOf = item => (item.on && hasIcon(`${item.icon}-fill`) ? `${item.icon}-
   white-space: nowrap;
 }
 
-.nav-item--on { background: var(--primary-c); color: var(--on-primary-c); font-weight: 700; }
+/* активный — фоном и залитой иконкой; жирный шрифт не нужен: длинные подписи («Грамматика») от него не влезают */
+.nav-item--on { background: var(--primary-c); color: var(--on-primary-c); }
 
 @media (min-width: 840px) {
   .nav {
