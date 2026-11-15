@@ -3,6 +3,7 @@ import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { readingRepo } from './repo.js'
 import { textsOf } from './content/index.js'
+import { saved, loadSaved } from './texts.js'
 import { LEVELS, readStatus } from './domain.js'
 import { useLibraryStore } from '@/core/library/store.js'
 import AppTopBar from '@/core/shell/AppTopBar.vue'
@@ -25,6 +26,7 @@ async function loadProgress() {
   progress.value = new Map(list.map(p => [p.text_id, p]))
 }
 watch(() => library.current?.id, loadProgress, { immediate: true })
+loadSaved()
 
 const texts = computed(() => textsOf(library.current?.id).filter(x => x.topic === props.topic))
 
@@ -115,8 +117,15 @@ const levelClass = level => `level--${level[0].toLowerCase()}`
             {{ t('reading.chapters', { n: text.chapters.length }) }}
           </span>
         </span>
-        <span class="status" :class="`status--${statusOf(text).kind}`">
-          {{ t(`reading.status.${statusOf(text).kind}`, { n: statusOf(text).percent }) }}
+        <!-- статус, под ним облако — не скачан: откроется только с интернетом -->
+        <span class="side">
+          <span class="status" :class="`status--${statusOf(text).kind}`">
+            {{ t(`reading.status.${statusOf(text).kind}`, { n: statusOf(text).percent }) }}
+          </span>
+          <span v-if="!saved.has(text.id)" class="cloud" :title="t('reading.notSaved')">
+            <AppIcon name="cloud-download" size="1.25rem" />
+            <span class="sr-only">{{ t('reading.notSaved') }}</span>
+          </span>
         </span>
       </RouterLink>
     </li>
@@ -179,6 +188,18 @@ const levelClass = level => `level--${level[0].toLowerCase()}`
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.side {
+  flex-shrink: 0;
+  display: grid;
+  justify-items: center;
+  gap: 0.25rem;
+}
+
+.cloud {
+  display: inline-flex;
+  color: var(--muted);
 }
 
 .status {

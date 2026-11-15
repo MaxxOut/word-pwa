@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest'
-import { parseChapter, readPercent, readStatus } from './domain.js'
+import { parseChapter, readPercent, readStatus, LEVELS } from './domain.js'
 import { textsOf, findText, TOPICS } from './content/index.js'
+import { catalogEntry } from './content/catalog-entry.js'
+import CATALOG from './content/catalog.js'
 
 describe('reading', () => {
   it('разбирает главу на абзацы и сквозные номера слов', () => {
@@ -23,16 +25,56 @@ describe('reading', () => {
     expect(readStatus({ finished: true })).toBe('finished')
   })
 
-  it('встроенные тексты корректны', () => {
+  it('каталог совпадает с файлами текстов (иначе — npm run texts)', () => {
+    const files = import.meta.glob('./content/*/*.text.js', { eager: true, import: 'default' })
+    const built = Object.entries(files)
+      .map(([path, text]) => catalogEntry(text, path.replace('./content/', '').replace(/\.text\.js$/, '')))
+      .sort((a, b) => a.file.localeCompare(b.file))
+    expect(CATALOG).toEqual(built)
+  })
+
+  it('тексты корректны', () => {
     const topics = TOPICS.map(t => t.id)
     for (const lib of ['en', 'de']) {
       for (const text of textsOf(lib)) {
-        expect(text.library_id).toBe(lib)
+        expect(text.id.startsWith(`${lib}-`), text.id).toBe(true)
         expect(topics).toContain(text.topic)
+        expect(LEVELS).toContain(text.level)
         expect(text.chapters.length).toBeGreaterThan(0)
         expect(findText(text.id)).toBe(text)
       }
     }
+  })
+})
+
+describe('скачанные тексты', async () => {
+  const { db } = await import('@/core/db.js')
+  const { saved, getText, downloadAll, removeTexts, savedStats } = await import('./texts.js')
+
+  it('открытый текст сохраняется на телефоне, удаление — по выбору', async () => {
+    await db.reading_texts.clear()
+    saved.clear()
+
+    const text = await getText('de-fuchs-trauben')
+    expect(text.library_id).toBe('de')
+    expect(text.chapters[0].text).toContain('Fuchs')
+    expect(saved.has('de-fuchs-trauben')).toBe(true)
+
+    await downloadAll('de')
+    const all = textsOf('de').map(t => t.id)
+    expect(savedStats('de').saved).toEqual(all)
+    expect(savedStats('de').missingBytes).toBe(0)
+
+    const stats = savedStats('de', new Set(['de-fuchs-trauben']))
+    expect(stats.finished).toEqual(['de-fuchs-trauben'])
+    await removeTexts(stats.finished)
+    expect(await db.reading_texts.get('de-fuchs-trauben')).toBeUndefined()
+    expect(savedStats('de').saved).toHaveLength(all.length - 1)
+  })
+
+  it('устаревшую копию заменяет новая', async () => {
+    await db.reading_texts.update('de-e-auto', { hash: 'old', text: { title: 'old' } })
+    expect((await getText('de-e-auto')).title).toBe(findText('de-e-auto').title)
   })
 })
 

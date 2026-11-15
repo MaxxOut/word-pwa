@@ -1,0 +1,22 @@
+// создаётся командой npm run texts — руками не править
+export default [
+  {"id":"de-e-auto","library_id":"de","file":"de/e-auto","topic":"science","level":"B1","added":"2026-10-27","title":"Wie funktioniert ein Elektroauto?","chapters":["Batterie und Motor","Laden und Zukunft"],"bytes":2964,"hash":"1woyo29"},
+  {"id":"de-fuchs-trauben","library_id":"de","file":"de/fuchs-trauben","topic":"tales","level":"A1","added":"2026-10-27","title":"Der Fuchs und die Trauben","chapters":[""],"bytes":1329,"hash":"4itvic"},
+  {"id":"de-himmel-blau","library_id":"de","file":"de/himmel-blau","topic":"science","level":"A2","added":"2026-10-25","title":"Warum ist der Himmel blau?","chapters":[""],"bytes":1561,"hash":"lertt0"},
+  {"id":"de-stadtmusikanten","library_id":"de","file":"de/stadtmusikanten","topic":"tales","level":"A2","added":"2026-10-26","title":"Die Bremer Stadtmusikanten","chapters":["Vier Freunde","Das Räuberhaus"],"bytes":3067,"hash":"1fo1siq"},
+  {"id":"de-tag-berlin","library_id":"de","file":"de/tag-berlin","topic":"life","level":"A2","added":"2026-10-27","title":"Ein Tag in Berlin","chapters":["Am Vormittag","Am Nachmittag und Abend"],"bytes":2896,"hash":"zsu67e"},
+  {"id":"en-city-day","library_id":"en","file":"en/city-day","topic":"life","level":"B1","added":"2026-10-27","title":"A Day in London","chapters":["Morning","Afternoon","Evening"],"bytes":4243,"hash":"12rk4un"},
+  {"id":"en-code-smell","library_id":"en","file":"en/code-smell","topic":"tech","level":"B2","added":"2026-11-08","title":"Code Smells","chapters":["What Is a Code Smell?","Common Smells"],"bytes":4386,"hash":"k2074b"},
+  {"id":"en-domain-driven-design","library_id":"en","file":"en/domain-driven-design","topic":"tech","level":"B2","added":"2026-11-14","title":"Domain-Driven Design","chapters":["What Is Domain-Driven Design?","A Common Language and Its Models","Working with the Model","Bounded Contexts","Related Ideas"],"bytes":7633,"hash":"e569el"},
+  {"id":"en-electric-cars","library_id":"en","file":"en/electric-cars","topic":"science","level":"B1","added":"2026-10-27","title":"How Do Electric Cars Work?","chapters":["Inside the Car","Charging and the Future"],"bytes":2729,"hash":"1uyjxtu"},
+  {"id":"en-first-job","library_id":"en","file":"en/first-job","topic":"life","level":"A2","added":"2026-10-26","title":"My First Job","chapters":[""],"bytes":1484,"hash":"v8azjx"},
+  {"id":"en-fox-grapes","library_id":"en","file":"en/fox-grapes","topic":"tales","level":"A1","added":"2026-10-27","title":"The Fox and the Grapes","chapters":[""],"bytes":1231,"hash":"m08kfz"},
+  {"id":"en-happy-prince","library_id":"en","file":"en/happy-prince","topic":"tales","level":"B2","added":"2026-11-08","title":"The Happy Prince","chapters":["Part I","Part II","Part III"],"bytes":19337,"hash":"1nco66x"},
+  {"id":"en-hexagonal-architecture","library_id":"en","file":"en/hexagonal-architecture","topic":"tech","level":"B2","added":"2026-11-08","title":"Hexagonal and Clean Architecture","chapters":["Origin","Principle","Criticism and Variants"],"bytes":4800,"hash":"1kbut6u"},
+  {"id":"en-nightingale-rose","library_id":"en","file":"en/nightingale-rose","topic":"tales","level":"B2","added":"2026-11-08","title":"The Nightingale and the Rose","chapters":["Part I","Part II"],"bytes":12844,"hash":"hf0k0p"},
+  {"id":"en-selfish-giant","library_id":"en","file":"en/selfish-giant","topic":"tales","level":"B1","added":"2026-11-08","title":"The Selfish Giant","chapters":["Part I","Part II"],"bytes":9068,"hash":"tgj7ck"},
+  {"id":"en-sky-blue","library_id":"en","file":"en/sky-blue","topic":"science","level":"A2","added":"2026-10-25","title":"Why Is the Sky Blue?","chapters":[""],"bytes":1414,"hash":"nf304h"},
+  {"id":"en-technical-debt","library_id":"en","file":"en/technical-debt","topic":"tech","level":"B2","added":"2026-11-08","title":"Technical Debt","chapters":["What Is Technical Debt?","Causes","Consequences","Managing the Debt"],"bytes":7043,"hash":"1que15n"},
+  {"id":"en-tortoise-hare","library_id":"en","file":"en/tortoise-hare","topic":"tales","level":"A2","added":"2026-10-26","title":"The Tortoise and the Hare","chapters":["The Challenge","The Race"],"bytes":2432,"hash":"o7kcgm"},
+  {"id":"en-vue-reactivity","library_id":"en","file":"en/vue-reactivity","topic":"tech","level":"C1","added":"2026-11-08","title":"Vue: Reactivity in Depth","chapters":["What Is Reactivity?","How Reactivity Works in Vue","Runtime vs. Compile-time Reactivity","Integration with External State","Connection to Signals"],"bytes":12116,"hash":"1q0qhr2"},
+]

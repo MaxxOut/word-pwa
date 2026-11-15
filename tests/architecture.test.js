@@ -118,6 +118,15 @@ describe('база', () => {
       sessions:  '[library_id+date], library_id, date',
       reading:   'text_id, library_id',
     },
+    // тексты для чтения скачиваются по требованию (2026-11-15)
+    4: {
+      libraries:     'id',
+      words:         'id, library_id, [library_id+word_lc], *form_keys',
+      meta:          'key',
+      sessions:      '[library_id+date], library_id, date',
+      reading:       'text_id, library_id',
+      reading_texts: 'id, library_id',
+    },
   }
 
   it('схема совпадает с записанной для текущей версии', () => {

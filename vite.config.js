@@ -35,7 +35,11 @@ export default defineConfig({
         // woff не нужен — все современные браузеры берут woff2
         globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
         // редкие наборы символов шрифтов браузер подгрузит сам, если понадобятся
-        globIgnores: ['**/*-{greek,vietnamese,cyrillic-ext,latin-ext,greek-ext}-*.woff2'],
+        // + тексты для чтения (*.text.js): скачиваются по требованию и хранятся в базе
+        globIgnores: [
+          '**/*-{greek,vietnamese,cyrillic-ext,latin-ext,greek-ext}-*.woff2',
+          '**/*.text-*.js',
+        ],
         cleanupOutdatedCaches: true,
       },
     }),

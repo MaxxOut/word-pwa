@@ -36,7 +36,7 @@ function open() {
     <div class="label">{{ last ? t('reading.continue') : t('reading.title') }}</div>
     <b v-if="last" class="title">{{ last.text.title }}</b>
     <span v-if="last" class="muted small meta">
-      {{ last.text.chapters[last.progress.chapter]?.title || last.text.level }} · {{ last.progress.percent }}%
+      {{ last.text.chapters[last.progress.chapter] || last.text.level }} · {{ last.progress.percent }}%
     </span>
     <span v-else class="muted meta">{{ t('reading.start') }}</span>
     <UiButton variant="outlined" class="action" @click="open">

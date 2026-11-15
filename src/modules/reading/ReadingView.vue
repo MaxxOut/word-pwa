@@ -6,6 +6,7 @@ import { useLibraryStore } from '@/core/library/store.js'
 import AppTopBar from '@/core/shell/AppTopBar.vue'
 import AppIcon from '@/shared/components/AppIcon.vue'
 import UiEmpty from '@/shared/ui/UiEmpty.vue'
+import TextsMenu from './TextsMenu.vue'
 
 // корень «Чтения»: темы текущей библиотеки
 const { t }   = useI18n()
@@ -20,7 +21,9 @@ const topics = computed(() => {
 </script>
 
 <template>
-  <AppTopBar :title="t('reading.title')" :library="false" />
+  <AppTopBar :title="t('reading.title')" :library="false">
+    <TextsMenu v-if="topics.length" />
+  </AppTopBar>
 
   <UiEmpty v-if="!topics.length" icon="reading" :title="t('reading.empty')" />
 

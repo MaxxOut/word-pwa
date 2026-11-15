@@ -10,8 +10,8 @@ export default {
   sorts: {
     alpha:     'За абеткою, А → Я',
     alphaDesc: 'За абеткою, Я → А',
-    new:       'Спершу нові',
-    old:       'Спершу старі',
+    new:       'Нові',
+    old:       'Старі',
   },
   count:                  'Слів: {n}',
   showMore:               'Показати ще {n}',
