@@ -75,6 +75,9 @@ watch(() => library.current?.id, load, { immediate: true })
   box-shadow: var(--shadow-card);
 }
 
+/* статистика (прогресс, активность) — белым, разделы — своими цветами */
+.tile--stat { background: var(--surface); }
+
 .tile-label {
   font-size: 0.8125rem;
   letter-spacing: 0.02em;

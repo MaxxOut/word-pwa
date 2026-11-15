@@ -14,7 +14,7 @@ const percent = computed(() =>
 </script>
 
 <template>
-  <section v-if="stats.words" class="tile tile--wide progress">
+  <section v-if="stats.words" class="tile tile--wide tile--stat progress">
     <div
         class="ring"
         :style="{ '--p': percent }"
@@ -59,7 +59,8 @@ const percent = computed(() =>
   width: 3.875rem;
   height: 3.875rem;
   border-radius: 50%;
-  background: var(--container);
+  /* середина кольца — цветом плитки */
+  background: var(--surface);
   font-size: 0.9375rem;
 }
 

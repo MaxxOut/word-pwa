@@ -148,6 +148,7 @@ async function save() {
       </template>
 
       <div v-if="error" class="error small">{{ error }}</div>
+      <p class="muted small">{{ t('reading.mine.shareHint') }}</p>
     </div>
 
     <template #footer>

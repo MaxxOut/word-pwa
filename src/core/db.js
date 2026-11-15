@@ -6,7 +6,7 @@ export const DB_NAME = 'words'
 // Схема изменилась (в том числе модуль добавлен или удалён) — поднять SCHEMA_VERSION
 // и дописать новую версию в SCHEMAS (tests/architecture.test.js). Dexie сам создаст новые таблицы
 // и удалит те, которых в схеме больше нет.
-export const SCHEMA_VERSION = 4
+export const SCHEMA_VERSION = 5
 
 // фиксированные библиотеки — id совпадает с кодом языка; цвета — в теме (--en, --de)
 export const LIBRARIES = [

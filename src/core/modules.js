@@ -12,6 +12,8 @@
 //   icons       — { имя: svg } свои иконки для AppIcon
 //   references  — [{ id, label, search }] справочники для поиска в «Словах», книге, карточке слова
 //                 (описание — core/reference/reference.js)
+//   activity    — [{ id, label, color, days(libraryId) → Promise<{ 'YYYY-MM-DD': число }> }] свой этаж
+//                 в столбиках «Активности» на главной (color — токен темы: teal → --teal)
 //
 // Модули не импортируют друг друга: общее — только через ядро (core/*) и shared/*.
 import { registerIcons } from '@/shared/components/AppIcon.vue'
@@ -38,5 +40,6 @@ export const settingsTabs     = collect('settingsTabs')
 export const settingsSections = collect('settings')
 export const dataActions      = collect('dataActions')
 export const referenceSources = collect('references')
+export const activitySources  = collect('activity')
 
 for (const m of modules) if (m.icons) registerIcons(m.icons)

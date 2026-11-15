@@ -127,6 +127,16 @@ describe('база', () => {
       reading:       'text_id, library_id',
       reading_texts: 'id, library_id',
     },
+    // результаты тренировок грамматики (2026-11-15)
+    5: {
+      libraries:     'id',
+      words:         'id, library_id, [library_id+word_lc], *form_keys',
+      meta:          'key',
+      sessions:      '[library_id+date], library_id, date',
+      reading:       'text_id, library_id',
+      reading_texts: 'id, library_id',
+      grammar:       'id, library_id',
+    },
   }
 
   it('схема совпадает с записанной для текущей версии', () => {

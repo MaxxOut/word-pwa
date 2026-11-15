@@ -24,6 +24,9 @@
   --success:   #2E6B30; --success-c: #C8EFC4; --on-success-c: #002106;
   /* третий цвет — справочные данные (неправильные глаголы), не слова пользователя */
   --tertiary:  #6B4FA0; --tertiary-c: #EBDDFF; --on-tertiary-c: #24005A;
+  /* цвета разделов на главной (чтение, грамматика) — чтобы плитки не были одинаковыми */
+  --amber: #8A6D3B; --amber-c: #F3E7D3; --on-amber-c: #2B1D00;
+  --teal:  #4A8A82; --teal-c:  #D9EAE6; --on-teal-c:  #00201C;
 
   /* акцент — цвет текущей библиотеки */
   --primary:     var(--en);
@@ -63,6 +66,8 @@
     --error: #FFB4AB; --error-c: #93000A; --on-error-c: #FFDAD6; --on-error: #690005;
     --success: #9CD49A; --success-c: #13521A; --on-success-c: #C8EFC4;
     --tertiary: #D3BCFD; --tertiary-c: #4F378B; --on-tertiary-c: #EBDDFF;
+    --amber: #D9BC87; --amber-c: #3F372A; --on-amber-c: #F3E7D3;
+    --teal:  #8CC2BA; --teal-c:  #2A3D3A; --on-teal-c:  #D9EAE6;
   }
 }
 :root[data-theme="dark"] {
@@ -74,6 +79,8 @@
   --error: #FFB4AB; --error-c: #93000A; --on-error-c: #FFDAD6; --on-error: #690005;
   --success: #9CD49A; --success-c: #13521A; --on-success-c: #C8EFC4;
   --tertiary: #D3BCFD; --tertiary-c: #4F378B; --on-tertiary-c: #EBDDFF;
+  --amber: #D9BC87; --amber-c: #3F372A; --on-amber-c: #F3E7D3;
+  --teal:  #8CC2BA; --teal-c:  #2A3D3A; --on-teal-c:  #D9EAE6;
 }
 
 /* размер текста — всё в rem, поэтому достаточно корня */

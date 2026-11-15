@@ -53,7 +53,9 @@ function open() {
   gap: 0.25rem 0.75rem;
   padding: 1rem 1.125rem;
   border-radius: 0.5rem;
-  background: var(--container);
+  /* свой цвет раздела — плитки главной не одинаковые */
+  background: var(--amber-c);
+  color: var(--on-amber-c);
   box-shadow: var(--shadow-card);
 }
 
@@ -63,6 +65,9 @@ function open() {
   letter-spacing: 0.02em;
   color: var(--muted);
 }
+
+/* на цветном фоне серый плохо читается — приглушаем цвет самой плитки */
+.read .label, .read .muted { color: inherit; opacity: 0.75; }
 
 .title {
   grid-area: title;

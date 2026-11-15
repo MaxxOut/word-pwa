@@ -12,6 +12,7 @@ import AppIcon from '@/shared/components/AppIcon.vue'
 import UiIconButton from '@/shared/ui/UiIconButton.vue'
 import UiButton from '@/shared/ui/UiButton.vue'
 import UiEmpty from '@/shared/ui/UiEmpty.vue'
+import UiSheet from '@/shared/ui/UiSheet.vue'
 import AddTextSheet from './AddTextSheet.vue'
 import { keepShared, takeShared } from './share.js'
 
@@ -29,6 +30,7 @@ const library = useLibraryStore()
 const texts    = ref([])
 const progress = ref(new Map())
 const sheet    = ref(null)
+const howTo    = ref(false) // подсказка «Как добавить книгу»
 
 async function load() {
   if (!library.current) return
@@ -67,11 +69,13 @@ async function remove(text) {
 
 <template>
   <AppTopBar :title="t('reading.mine.section')" :back="{ name: 'reading' }" :library="false">
+    <UiIconButton icon="info" :label="t('reading.mine.howTo')" @click="howTo = true" />
     <UiIconButton icon="add" :label="t('reading.mine.addTitle')" @click="sheet.open()" />
   </AppTopBar>
 
   <UiEmpty v-if="!texts.length" icon="book" :title="t('reading.mine.empty')" :text="t('reading.mine.emptyHint')">
     <UiButton variant="filled" icon="add" @click="sheet.open()">{{ t('reading.mine.addTitle') }}</UiButton>
+    <UiButton variant="text" icon="info" @click="howTo = true">{{ t('reading.mine.howTo') }}</UiButton>
   </UiEmpty>
 
   <ul v-else class="list">
@@ -93,6 +97,16 @@ async function remove(text) {
   </ul>
 
   <AddTextSheet ref="sheet" />
+
+  <!-- способы добавить книгу: руководства нет — объясняем здесь -->
+  <UiSheet v-model="howTo" :title="t('reading.mine.howTo')">
+    <dl class="how">
+      <template v-for="k in ['share', 'file', 'paste', 'store']" :key="k">
+        <dt>{{ t(`reading.mine.how.${k}Title`) }}</dt>
+        <dd>{{ t(`reading.mine.how.${k}`) }}</dd>
+      </template>
+    </dl>
+  </UiSheet>
 </template>
 
 <style scoped>
@@ -161,4 +175,15 @@ async function remove(text) {
   color: var(--on);
 }
 .status--finished { background: var(--success-c); color: var(--on-success-c); }
+
+.how {
+  display: grid;
+  gap: 0.25rem;
+}
+.how dt {
+  margin-top: 0.75rem;
+  font-weight: 700;
+}
+.how dt:first-child { margin-top: 0; }
+.how dd { line-height: 1.45; }
 </style>

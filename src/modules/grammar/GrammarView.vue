@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { verbsOf } from './verbs.js'
+import { tensesOf } from './tenses/index.js'
 import { useLibraryStore } from '@/core/library/store.js'
 import AppTopBar from '@/core/shell/AppTopBar.vue'
 import AppIcon from '@/shared/components/AppIcon.vue'
@@ -11,12 +12,31 @@ const { t }   = useI18n()
 const library = useLibraryStore()
 
 const verbCount = computed(() => verbsOf(library.current?.id).length)
+
+// времена: готовые из всех («3 / 12»); в библиотеке без времён (немецкий) — «Скоро»
+const tenses      = computed(() => tensesOf(library.current?.id))
+const tensesReady = computed(() => tenses.value.filter(x => x.active).length)
 </script>
 
 <template>
   <AppTopBar :title="t('grammar.title')" :library="false" />
 
   <div class="sections">
+    <RouterLink v-if="tensesReady" v-ripple class="section" :to="{ name: 'grammar-tenses' }">
+      <span class="section-head">
+        <span class="section-icon"><AppIcon name="tenses" size="1.75rem" /></span>
+        <span class="num section-count">{{ tensesReady }}<span class="of">/{{ tenses.length }}</span></span>
+      </span>
+      <span class="section-title">{{ t('grammar.tenses.title') }}</span>
+    </RouterLink>
+    <div v-else class="section section--soon" aria-disabled="true">
+      <span class="section-head">
+        <span class="section-icon"><AppIcon name="tenses" size="1.75rem" /></span>
+        <span class="soon">{{ t('grammar.soon') }}</span>
+      </span>
+      <span class="section-title">{{ t('grammar.tenses.title') }}</span>
+    </div>
+
     <RouterLink v-ripple class="section" :to="{ name: 'grammar-verbs' }">
       <span class="section-head">
         <span class="section-icon"><AppIcon name="verbs" size="1.75rem" /></span>
@@ -66,6 +86,8 @@ const verbCount = computed(() => verbsOf(library.current?.id).length)
   justify-content: space-between;
   margin-bottom: 0.5rem;
 }
+
+.of { font-size: 1rem; }
 
 .section-count {
   font-size: 1.75rem;
