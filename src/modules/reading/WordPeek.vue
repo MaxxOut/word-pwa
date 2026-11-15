@@ -6,7 +6,10 @@ import { DuplicateWordError, FormsLimitError } from '@/core/words/errors.js'
 import { cleanToken, exampleAround, baseCandidates } from './domain.js'
 import { useLibraryStore } from '@/core/library/store.js'
 import TranslateActions from '@/core/translate/TranslateActions.vue'
+import ReferenceHits from '@/core/reference/ReferenceHits.vue'
 import { toast } from '@/shared/ui/feedback.js'
+import { speak, canSpeak } from '@/shared/utils/browser.js'
+import UiIconButton from '@/shared/ui/UiIconButton.vue'
 import { pushLayer, popLayer } from '@/shared/ui/backClose.js'
 import AppIcon from '@/shared/components/AppIcon.vue'
 import UiButton from '@/shared/ui/UiButton.vue'
@@ -14,7 +17,8 @@ import UiButton from '@/shared/ui/UiButton.vue'
 // пузырь у нажатого слова: известное — слово и перевод (нет перевода — можно перевести);
 // записано формой другого слова — dogs → dog и перевод; новое — перевести и добавить в словарь
 // или присоединить формой к слову из словаря (варианты по окончаниям — только подсказка).
-// Под словом, а если снизу не влезает — над ним. Закрывается нажатием мимо и «Назад».
+// Нажатое есть в справочнике (went → go — went — gone) — сверху блок «в словарь с формами».
+// Рядом со словом — озвучка. Под словом, а если снизу не влезает — над ним. Закрывается нажатием мимо и «Назад».
 const props = defineProps({
   libraryId: { type: String, required: true },
 })
@@ -225,6 +229,13 @@ async function attachTo(target) {
 }
 
 
+// добавлено из справочника — пузырь сделал своё
+function onReferenceSaved({ created }) {
+  close()
+  waitingFor.value = ''
+  if (created) library.load()
+}
+
 async function save(action, created) {
   saving.value = true
   error.value  = ''
@@ -247,6 +258,11 @@ onBeforeUnmount(() => {
   resizer.disconnect()
 })
 
+// озвучить: известное — как в словаре, новое — как в поле (могли поправить форму)
+function say(text) {
+  speak(text, library.current?.lang_code ?? props.libraryId)
+}
+
 defineExpose({ open, close })
 </script>
 
@@ -263,7 +279,10 @@ defineExpose({ open, close })
       >
         <!-- записано формой другого слова: dogs → dog -->
         <template v-if="viaForm">
-          <div class="word">{{ viaForm.form.word }} <span class="muted">→</span> {{ viaForm.word.word }}</div>
+          <div class="head">
+            <div class="word grow">{{ viaForm.form.word }} <span class="muted">→</span> {{ viaForm.word.word }}</div>
+            <UiIconButton v-if="canSpeak()" class="say" icon="speak" :label="t('reading.speak')" @click="say(viaForm.form.word)" />
+          </div>
           <div v-if="viaForm.form.translation.length || viaForm.form.note" class="muted small">
             {{ [viaForm.form.translation.join(', '), viaForm.form.note].filter(Boolean).join(' · ') }}
           </div>
@@ -272,13 +291,19 @@ defineExpose({ open, close })
 
         <!-- известное слово -->
         <template v-else-if="found && found.translation?.length">
-          <b class="word">{{ found.word }}</b>
+          <div class="head">
+            <b class="word grow">{{ found.word }}</b>
+            <UiIconButton v-if="canSpeak()" class="say" icon="speak" :label="t('reading.speak')" @click="say(found.word)" />
+          </div>
           <div class="translation">{{ found.translation.join(', ') }}</div>
         </template>
 
         <!-- известное без перевода — перевести и сохранить -->
         <form v-else-if="found" class="add" @submit.prevent="saveTranslation">
-          <b class="word">{{ found.word }}</b>
+          <div class="head">
+            <b class="word grow">{{ found.word }}</b>
+            <UiIconButton v-if="canSpeak()" class="say" icon="speak" :label="t('reading.speak')" @click="say(found.word)" />
+          </div>
           <div class="muted translation translation--none">{{ t('status.untranslated') }}</div>
           <div class="part">
             <input
@@ -307,16 +332,21 @@ defineExpose({ open, close })
 
         <!-- новое — перевести и добавить -->
         <form v-else class="add" @submit.prevent="add">
-          <input
-              v-model="word"
-              class="word word-input"
-              :aria-label="t('word.word')"
-              :title="t('reading.formHint')"
-              autocomplete="off"
-              autocapitalize="off"
-              spellcheck="false"
-          >
+          <div class="head">
+            <input
+                v-model="word"
+                class="word word-input"
+                :aria-label="t('word.word')"
+                :title="t('reading.formHint')"
+                autocomplete="off"
+                autocapitalize="off"
+                spellcheck="false"
+            >
+            <UiIconButton v-if="canSpeak()" class="say" icon="speak" :label="t('reading.speak')" :disabled="!word.trim()" @click="say(word)" />
+          </div>
           <div class="muted translation translation--none">{{ t('status.untranslated') }}</div>
+
+          <ReferenceHits :library-id="libraryId" :text="clicked" exact compact @saved="onReferenceSaved" />
 
           <!-- может быть формой слова из словаря: присоединяет только пользователь -->
           <div v-if="suggestions.length" class="part">
@@ -404,6 +434,18 @@ defineExpose({ open, close })
   font-weight: 700;
 }
 .translation { font-size: 1rem; }
+
+/* слово и кнопка озвучки — кнопка компактнее обычной, чтобы не раздувать пузырь */
+.head {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+.say {
+  width: 2.25rem;
+  height: 2.25rem;
+  margin: -0.375rem -0.5rem -0.375rem 0;
+}
 .translation--none { font-style: italic; }
 
 .add {
@@ -415,6 +457,8 @@ defineExpose({ open, close })
 
 /* слово выглядит текстом, но его можно поправить (peeped → peep) */
 .word-input {
+  flex: 1;
+  min-width: 0;
   width: 100%;
   padding: 0.125rem 0;
   border: 0;

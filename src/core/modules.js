@@ -10,6 +10,8 @@
 //   settings    — [{ tab, component, order }] карточки на вкладке настроек (своей или ядра: general, data)
 //   dataActions — [{ component, order }] строки в карточке «Данные» (вкладка data)
 //   icons       — { имя: svg } свои иконки для AppIcon
+//   references  — [{ id, label, search }] справочники для поиска в «Словах», книге, карточке слова
+//                 (описание — core/reference/reference.js)
 //
 // Модули не импортируют друг друга: общее — только через ядро (core/*) и shared/*.
 import { registerIcons } from '@/shared/components/AppIcon.vue'
@@ -35,5 +37,6 @@ export const homeTiles        = collect('home')
 export const settingsTabs     = collect('settingsTabs')
 export const settingsSections = collect('settings')
 export const dataActions      = collect('dataActions')
+export const referenceSources = collect('references')
 
 for (const m of modules) if (m.icons) registerIcons(m.icons)

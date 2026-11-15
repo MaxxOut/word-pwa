@@ -1,4 +1,5 @@
 <script setup>
+import { ref, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { goBack } from '@/shared/utils/navigation.js'
 import AppLogo from '@/shared/components/AppLogo.vue'
@@ -7,7 +8,7 @@ import UiIconButton from '@/shared/ui/UiIconButton.vue'
 
 // шапка экрана: логотип, заголовок (на главной — название приложения),
 // действия экрана (слот), чип библиотеки; слот below — прилипает вместе с шапкой
-defineProps({
+const props = defineProps({
   title:   { type: String,  default: '' },
   brand:   { type: Boolean, default: false },
   library: { type: Boolean, default: true },
@@ -16,6 +17,25 @@ defineProps({
 })
 
 const router = useRouter()
+
+// длинный заголовок («Неправильные глаголы») уменьшается, чтобы влезть, но не мельче 60 %;
+// дальше — многоточие
+const MIN_SCALE = 0.6
+const titleEl   = ref(null)
+
+function fit() {
+  const el = titleEl.value
+  if (!el) return
+  el.style.fontSize = ''
+  if (el.scrollWidth <= el.clientWidth) return
+  const base = parseFloat(getComputedStyle(el).fontSize)
+  el.style.fontSize = `${base * Math.max(MIN_SCALE, el.clientWidth / el.scrollWidth)}px`
+}
+
+const resizer = new ResizeObserver(() => fit())
+onMounted(() => titleEl.value && resizer.observe(titleEl.value))
+onBeforeUnmount(() => resizer.disconnect())
+watch(() => props.title, () => nextTick(fit))
 </script>
 
 <template>
@@ -25,7 +45,7 @@ const router = useRouter()
       <RouterLink v-else v-ripple :to="{ name: 'home' }" class="home-link" :aria-label="$t('nav.home')">
         <AppLogo />
       </RouterLink>
-      <h1 class="top-title">{{ brand ? 'WordApp' : title }}</h1>
+      <h1 ref="titleEl" class="top-title">{{ brand ? 'WordApp' : title }}</h1>
       <slot />
       <LibraryChip v-if="library" />
     </div>

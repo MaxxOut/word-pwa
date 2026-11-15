@@ -1,9 +1,10 @@
 <script setup>
-import { ref, nextTick } from 'vue'
+import { ref, computed, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { wordsRepo } from '@/core/words/repo.js'
 import { DuplicateWordError } from '@/core/words/errors.js'
-import { MAX_FORMS } from '@/core/words/domain.js'
+import { MAX_FORMS, normalizeWord } from '@/core/words/domain.js'
+import { lookupReferences } from '@/core/reference/reference.js'
 import { speak, canSpeak } from '@/shared/utils/browser.js'
 import { toast, confirm } from '@/shared/ui/feedback.js'
 import UiSheet from '@/shared/ui/UiSheet.vue'
@@ -20,7 +21,7 @@ const props = defineProps({
 
 const emit = defineEmits(['saved'])
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 const visible   = ref(false)
 const saving    = ref(false)
@@ -132,6 +133,24 @@ function onAi(row) {
   f.examples = [...new Set([...f.examples.filter(s => s.trim()), ...row.examples])]
 }
 
+// слово есть в справочнике (неправильный глагол), а форм у него не хватает — заполнить из справочника.
+// Так подтягиваются и глаголы, добавленные раньше обычным словом
+const reference = computed(() => {
+  const libraryId = editing.value?.library_id ?? props.libraryId
+  const item = lookupReferences(libraryId, form.value.word, { locale: locale.value, exact: true, limit: 1 })[0]?.items[0]
+  if (!item || normalizeWord(item.word.word) !== normalizeWord(form.value.word)) return null
+  // само слово — тоже «есть» (come — came — come)
+  const have    = new Set([form.value.word, ...form.value.forms.map(f => f.word)].map(normalizeWord))
+  const missing = item.word.forms.filter(f => !have.has(normalizeWord(f.word)))
+  return { item, missing: missing.slice(0, Math.max(0, MAX_FORMS - form.value.forms.length)) }
+})
+
+function fillForms() {
+  const { item, missing } = reference.value
+  form.value.forms.push(...missing.map(formToFields))
+  if (!form.value.transcription.trim() && item.word.transcription) form.value.transcription = item.word.transcription
+}
+
 // выделить форму в отдельное слово — сразу в базе (форма должна быть уже сохранена у слова)
 const savedForm = f => editing.value?.forms?.some(x => x.word.toLowerCase() === f.word.trim().toLowerCase())
 
@@ -239,6 +258,12 @@ defineExpose({ open })
       <!-- формы слова: dogs, went → go. Не учатся отдельно -->
       <fieldset class="group zone">
         <legend class="field-label">{{ t('words.forms.title') }}</legend>
+        <div v-if="reference?.missing.length" class="ref">
+          <span>{{ t('reference.irregular', { title: reference.item.title }) }}</span>
+          <UiButton variant="text" icon="add" class="add" @click="fillForms">
+            {{ t('reference.fillForms', { n: reference.missing.length }) }}
+          </UiButton>
+        </div>
         <div v-for="(f, i) in form.forms" :key="i" class="form-card">
           <div class="row">
             <UiInput
@@ -333,4 +358,16 @@ defineExpose({ open })
 .form-card .grow { min-width: 0; flex: 1 1 0; }
 
 .delete { color: var(--error); margin-right: auto; }
+
+/* подсказка из справочника — его цветом */
+.ref {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  background: var(--tertiary-c);
+  color: var(--on-tertiary-c);
+  font-size: 0.9375rem;
+}
+.ref .add { color: inherit; }
 </style>

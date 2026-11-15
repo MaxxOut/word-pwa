@@ -1,0 +1,32 @@
+export default {
+  title:   'Грамматика',
+  verbs:   'Неправильные глаголы',
+  rules:   'Правила',
+  soon:    'Скоро',
+  search:  'Любая форма или перевод',
+  nothing: 'Ничего не найдено',
+  speak:   'Произнести',
+  howTo:   'Когда какая форма',
+  addToDict:  'Добавить в словарь',
+  forms: {
+    inf:         'Infinitive',
+    past:        'Past Simple',
+    participle:  'Past Participle',
+    infinitiv:   'Infinitiv',
+    praeteritum: 'Präteritum',
+    perfekt:     'Perfekt',
+    praesens:    'Präsens',
+  },
+  info: {
+    inf:         'Начальная форма: to go, I go, I will go.',
+    past:        'Прошедшее время — Past Simple: I went there yesterday.',
+    participle:  'После have — Present Perfect (I have gone); в пассиве — после be (it was written).',
+    infinitiv:   'Начальная форма: gehen, ich will gehen.',
+    praeteritum: 'Прошедшее время в книгах и письменной речи. В разговоре — у sein, haben и модальных: ich war, ich hatte, ich konnte.',
+    perfekt:     'Прошедшее время в разговоре: hat / ist + Partizip II. ist — у глаголов движения и смены состояния (gehen, werden), hat — у остальных.',
+    praesens:    'У многих сильных глаголов в du и er/sie/es меняется гласная: nehmen → du nimmst, er nimmt.',
+  },
+  settings: {
+    soon: 'Скоро здесь появятся настройки грамматики.',
+  },
+}

@@ -22,6 +22,8 @@
 
   --error:     #BA1A1A; --error-c:   #FFDAD6; --on-error-c:   #410002; --on-error: #FFFFFF;
   --success:   #2E6B30; --success-c: #C8EFC4; --on-success-c: #002106;
+  /* третий цвет — справочные данные (неправильные глаголы), не слова пользователя */
+  --tertiary:  #6B4FA0; --tertiary-c: #EBDDFF; --on-tertiary-c: #24005A;
 
   /* акцент — цвет текущей библиотеки */
   --primary:     var(--en);
@@ -60,6 +62,7 @@
     --de: #FFB68E; --de-c: #7E3600; --on-de-c: #FFDCC7; --on-de: #3A1600;
     --error: #FFB4AB; --error-c: #93000A; --on-error-c: #FFDAD6; --on-error: #690005;
     --success: #9CD49A; --success-c: #13521A; --on-success-c: #C8EFC4;
+    --tertiary: #D3BCFD; --tertiary-c: #4F378B; --on-tertiary-c: #EBDDFF;
   }
 }
 :root[data-theme="dark"] {
@@ -70,6 +73,7 @@
   --de: #FFB68E; --de-c: #7E3600; --on-de-c: #FFDCC7; --on-de: #3A1600;
   --error: #FFB4AB; --error-c: #93000A; --on-error-c: #FFDAD6; --on-error: #690005;
   --success: #9CD49A; --success-c: #13521A; --on-success-c: #C8EFC4;
+  --tertiary: #D3BCFD; --tertiary-c: #4F378B; --on-tertiary-c: #EBDDFF;
 }
 
 /* размер текста — всё в rem, поэтому достаточно корня */

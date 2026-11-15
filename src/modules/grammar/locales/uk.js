@@ -1,0 +1,32 @@
+export default {
+  title:   'Граматика',
+  verbs:   'Неправильні дієслова',
+  rules:   'Правила',
+  soon:    'Скоро',
+  search:  'Будь-яка форма або переклад',
+  nothing: 'Нічого не знайдено',
+  speak:   'Вимовити',
+  howTo:   'Коли яка форма',
+  addToDict:  'Додати до словника',
+  forms: {
+    inf:         'Infinitive',
+    past:        'Past Simple',
+    participle:  'Past Participle',
+    infinitiv:   'Infinitiv',
+    praeteritum: 'Präteritum',
+    perfekt:     'Perfekt',
+    praesens:    'Präsens',
+  },
+  info: {
+    inf:         'Початкова форма: to go, I go, I will go.',
+    past:        'Минулий час — Past Simple: I went there yesterday.',
+    participle:  'Після have — Present Perfect (I have gone); у пасиві — після be (it was written).',
+    infinitiv:   'Початкова форма: gehen, ich will gehen.',
+    praeteritum: 'Минулий час у книжках і письмовій мові. У розмові — у sein, haben і модальних: ich war, ich hatte, ich konnte.',
+    perfekt:     'Минулий час у розмові: hat / ist + Partizip II. ist — у дієслів руху та зміни стану (gehen, werden), hat — в інших.',
+    praesens:    'У багатьох сильних дієслів у du та er/sie/es змінюється голосна: nehmen → du nimmst, er nimmt.',
+  },
+  settings: {
+    soon: 'Скоро тут з’являться налаштування граматики.',
+  },
+}

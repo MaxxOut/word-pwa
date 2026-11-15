@@ -15,6 +15,7 @@ import UiButton from '@/shared/ui/UiButton.vue'
 import UiInput from '@/shared/ui/UiInput.vue'
 import UiEmpty from '@/shared/ui/UiEmpty.vue'
 import UiSpinner from '@/shared/ui/UiSpinner.vue'
+import ReferenceHits from '@/core/reference/ReferenceHits.vue'
 import ImportDialog from './ImportDialog.vue'
 import WordDialog from './WordDialog.vue'
 
@@ -96,8 +97,12 @@ function setSort(value) {
   fetchWords()
 }
 
+// словарь меняется — блоку справочника перепроверить, что уже добавлено
+const changes = ref(0)
+
 // после правки — перечитать уже показанные страницы
 async function onChanged() {
+  changes.value++
   const shown = page.value
   await fetchWords()
   for (let p = 1; p < shown && words.value.length < total.value; p++) await fetchWords(true)
@@ -206,6 +211,9 @@ watch(libraryId, () => fetchWords(), { immediate: true })
     </div>
   </template>
 
+  <!-- поиск — ещё и по справочникам модулей (неправильные глаголы): своим цветом, без статуса -->
+  <ReferenceHits v-if="search.trim()" class="refs" :library-id="libraryId" :text="search" :stamp="changes" @saved="onChanged" />
+
   <!-- в body: при сдвиге экрана (transform) position: fixed внутри него ломается -->
   <Teleport to="body">
     <button v-ripple type="button" class="fab" :aria-label="t('words.add')" @click="wordDialog.open()">
@@ -218,6 +226,8 @@ watch(libraryId, () => fetchWords(), { immediate: true })
 </template>
 
 <style scoped>
+.refs { margin-top: 0.75rem; }
+
 .tools {
   display: grid;
   gap: 0.75rem;
