@@ -4,6 +4,11 @@
 
 const layers = [] // функции закрытия, по порядку открытия
 
+// шаг назад, которым закрылся слой, — асинхронный: переход сразу после закрытия шторки
+// его обгонит, и этот шаг потом уведёт с нового экрана. Перед переходом — await historySettled()
+let pending = Promise.resolve()
+export const historySettled = () => pending
+
 // слой поверх всех открытых: подтверждение из шторки — над шторкой,
 // независимо от того, в каком порядке они оказались в DOM
 let topZ = 100
@@ -27,5 +32,8 @@ export function popLayer(close) {
   const index = layers.lastIndexOf(close)
   if (index === -1) return
   layers.splice(index, 1)
-  if (history.state?.layer === index + 1) history.back()
+  if (history.state?.layer === index + 1) {
+    pending = new Promise(resolve => window.addEventListener('popstate', () => resolve(), { once: true }))
+    history.back()
+  }
 }

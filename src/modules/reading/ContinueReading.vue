@@ -3,7 +3,7 @@ import { ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { readingRepo } from './repo.js'
-import { findText } from './content/index.js'
+import { textInfo } from './texts.js'
 import { useLibraryStore } from '@/core/library/store.js'
 import UiButton from '@/shared/ui/UiButton.vue'
 
@@ -20,13 +20,13 @@ const last = ref(null) // { text, progress }
 async function load() {
   if (!library.current) return
   const progress = await readingRepo.last(library.current.id)
-  const text     = progress && findText(progress.text_id)
+  const text     = progress && await textInfo(progress.text_id)
   last.value = text ? { text, progress } : null
 }
 watch(() => library.current?.id, load, { immediate: true })
 
 function open() {
-  if (last.value) router.push({ name: 'reader', params: { id: last.value.text.id } })
+  if (last.value) router.push({ name: 'reader', params: { id: last.value.progress.text_id } })
   else router.push({ name: 'reading' })
 }
 </script>
@@ -36,7 +36,7 @@ function open() {
     <div class="label">{{ last ? t('reading.continue') : t('reading.title') }}</div>
     <b v-if="last" class="title">{{ last.text.title }}</b>
     <span v-if="last" class="muted small meta">
-      {{ last.text.chapters[last.progress.chapter] || last.text.level }} · {{ last.progress.percent }}%
+      {{ [last.text.chapters[last.progress.chapter] || last.text.level, `${last.progress.percent}%`].filter(Boolean).join(' · ') }}
     </span>
     <span v-else class="muted meta">{{ t('reading.start') }}</span>
     <UiButton variant="outlined" class="action" @click="open">

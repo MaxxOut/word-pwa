@@ -22,6 +22,12 @@ export default defineConfig({
         scope: './',
         display: 'standalone',
         orientation: 'portrait',
+        // «Поделиться» → WordApp: выделенный текст статьи — во внешние книги (core/router.js → takeShare)
+        share_target: {
+          action: './',
+          method: 'GET',
+          params: { title: 'title', text: 'text', url: 'url' },
+        },
         theme_color: '#EEF1F7',
         background_color: '#EEF1F7',
         icons: [

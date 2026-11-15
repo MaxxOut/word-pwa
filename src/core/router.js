@@ -14,8 +14,21 @@ const routes = [
   { path: '/:pathMatch(.*)*', redirect: { name: 'home' } },
 ]
 
-export default createRouter({
+const router = createRouter({
   history: createWebHashHistory(),
   routes,
   scrollBehavior: (to, from, saved) => saved ?? { top: 0 },
 })
+
+// «Поделиться» на Android (share_target в манифесте) открывает приложение с ?title=&text=&url= —
+// отдаём это маршруту модуля с meta.share (нет такого — просто запуск)
+export function takeShare() {
+  const params = new URLSearchParams(location.search)
+  if (!params.has('text') && !params.has('url')) return
+  history.replaceState(null, '', location.pathname + location.hash)
+  const target = router.getRoutes().find(r => r.meta.share)
+  if (!target) return
+  router.replace({ name: target.name, query: Object.fromEntries(['title', 'text', 'url'].map(k => [k, params.get(k) ?? ''])) })
+}
+
+export default router

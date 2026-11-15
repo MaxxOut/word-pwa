@@ -2,7 +2,7 @@
 import { shallowRef, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { getText } from './texts.js'
+import { getText, isUserText } from './texts.js'
 import { findText } from './content/index.js'
 import { goBack } from '@/shared/utils/navigation.js'
 import { needRefresh, applyUpdate } from '@/shared/utils/update.js'
@@ -21,23 +21,26 @@ const props = defineProps({
 const router = useRouter()
 const { t }  = useI18n()
 
+// своя книга (user-…) в каталоге не значится — только на телефоне
 const entry  = findText(props.id)
+const own    = isUserText(props.id)
 const text   = shallowRef(null)
 const failed = ref(false)
 
-if (!entry) router.replace({ name: 'reading' })
+if (!entry && !own) router.replace({ name: 'reading' })
 
 onMounted(async () => {
-  if (!entry) return
+  if (!entry && !own) return
   try {
     text.value = await getText(props.id)
+    if (!text.value) router.replace({ name: 'reading' }) // свою книгу удалили
   } catch {
     failed.value = true
   }
 })
 
 function back() {
-  goBack(router, { name: 'reading-topic', params: { topic: entry.topic } })
+  goBack(router, entry ? { name: 'reading-topic', params: { topic: entry.topic } } : { name: 'reading-mine' })
 }
 
 // неудачный import() браузер запоминает до перезагрузки — повтор только так
@@ -49,10 +52,10 @@ function retry() {
 <template>
   <BookView v-if="text" :text="text" />
 
-  <div v-else-if="entry" class="loading">
+  <div v-else-if="entry || own" class="loading">
     <header class="loading-top">
       <UiIconButton icon="back" :label="t('common.back')" @click="back" />
-      <h2 class="loading-title">{{ entry.title }}</h2>
+      <h2 class="loading-title">{{ entry?.title }}</h2>
     </header>
     <UiEmpty v-if="failed && needRefresh" icon="cloud-off" :title="t('reading.needUpdate')">
       <UiButton icon="refresh" @click="applyUpdate">{{ t('reading.update') }}</UiButton>

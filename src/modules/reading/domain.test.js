@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { reactive } from 'vue'
 import { parseChapter, readPercent, readStatus, LEVELS } from './domain.js'
 import { textsOf, findText, TOPICS } from './content/index.js'
 import { catalogEntry } from './content/catalog-entry.js'
@@ -129,5 +130,31 @@ describe('baseCandidates', async () => {
     for (const [form, base] of [
       ['macht', 'machen'], ['machte', 'machen'], ['gemacht', 'machen'], ['Hunde', 'hund'], ['Kindern', 'kind'],
     ]) expect(baseCandidates(form, 'de'), form).toContain(base)
+  })
+})
+
+describe('свои тексты', async () => {
+  const { db } = await import('@/core/db.js')
+  const { readingRepo } = await import('./repo.js')
+  const { addUserText, userTextsOf, getText, textInfo, removeUserText } = await import('./texts.js')
+
+  it('добавить, открыть, удалить вместе с местом чтения', async () => {
+    const chapters = [{ title: 'One', text: 'Hello world.' }, { title: '', text: 'Bye now, friend.' }]
+    // как из шторки: реактивные главы (Proxy) — база должна получить простые объекты
+    const id = await addUserText({ libraryId: 'en', title: 'My book', chapters: reactive(chapters) })
+    expect(id.startsWith('user-')).toBe(true)
+
+    const list = await userTextsOf('en')
+    expect(list.find(x => x.id === id)).toMatchObject({ title: 'My book', words: 5, chapters: 2 })
+    expect((await userTextsOf('de')).some(x => x.id === id)).toBe(false)
+
+    expect((await getText(id)).chapters).toEqual(chapters)
+    expect(await textInfo(id)).toEqual({ title: 'My book', chapters: ['One', ''], level: null })
+
+    await readingRepo.save({ text_id: id, library_id: 'en', chapter: 1, word: 0, percent: 50, finished: false })
+    await removeUserText(id)
+    expect(await getText(id)).toBeNull()
+    expect(await readingRepo.get(id)).toBeUndefined()
+    expect(await db.reading_texts.get(id)).toBeUndefined()
   })
 })

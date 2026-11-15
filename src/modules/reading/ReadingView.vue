@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { TOPICS, textsOf } from './content/index.js'
 import { useLibraryStore } from '@/core/library/store.js'
@@ -7,10 +7,16 @@ import AppTopBar from '@/core/shell/AppTopBar.vue'
 import AppIcon from '@/shared/components/AppIcon.vue'
 import UiEmpty from '@/shared/ui/UiEmpty.vue'
 import TextsMenu from './TextsMenu.vue'
+import { userTextsOf } from './texts.js'
 
-// корень «Чтения»: темы текущей библиотеки
+// корень «Чтения»: темы текущей библиотеки и внешние книги (свои тексты — третьим цветом)
 const { t }   = useI18n()
 const library = useLibraryStore()
+
+const mineCount = ref(0)
+watch(() => library.current?.id, async id => {
+  mineCount.value = id ? (await userTextsOf(id)).length : 0
+}, { immediate: true })
 
 const topics = computed(() => {
   const texts = textsOf(library.current?.id)
@@ -25,9 +31,7 @@ const topics = computed(() => {
     <TextsMenu v-if="topics.length" />
   </AppTopBar>
 
-  <UiEmpty v-if="!topics.length" icon="reading" :title="t('reading.empty')" />
-
-  <div v-else class="topics">
+  <div class="topics">
     <RouterLink
         v-for="topic in topics"
         :key="topic.id"
@@ -40,6 +44,14 @@ const topics = computed(() => {
         <span class="num topic-count" :aria-label="t('reading.texts', { n: topic.count })">{{ topic.count }}</span>
       </span>
       <span class="topic-title">{{ t(`reading.topics.${topic.id}`) }}</span>
+    </RouterLink>
+
+    <RouterLink v-ripple class="topic topic--mine" :to="{ name: 'reading-mine' }">
+      <span class="topic-head">
+        <span class="topic-icon"><AppIcon name="book" size="1.75rem" /></span>
+        <span class="num topic-count">{{ mineCount }}</span>
+      </span>
+      <span class="topic-title">{{ t('reading.mine.section') }}</span>
     </RouterLink>
   </div>
 </template>
@@ -64,6 +76,10 @@ const topics = computed(() => {
   color: var(--on-primary-c);
   text-decoration: none;
 }
+
+/* свои книги — третьим цветом */
+.topic--mine { background: var(--tertiary-c); color: var(--on-tertiary-c); }
+.topic--mine .topic-icon { background: var(--tertiary); color: var(--tertiary-c); }
 
 .topic-head {
   display: flex;

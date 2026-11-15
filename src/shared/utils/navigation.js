@@ -1,6 +1,7 @@
-// «Назад» в шапке: пришли из приложения — шаг назад по истории,
-// открыли по ссылке (истории нет) — на запасной экран
-export function goBack(router, fallback) {
-  if (window.history.state?.back) router.back()
-  else router.push(fallback)
+// «Назад» в шапке — всегда на родительский экран (как ссылка), а не «куда-то по истории»:
+// предыдущая запись истории и есть родитель — шаг назад (история не растёт); иначе (пришли свайпом,
+// с главной, по ссылке) — заменить адрес на родителя: без лишней записи, «Назад» не ходит по кругу
+export function goBack(router, parent) {
+  if (window.history.state?.back === router.resolve(parent).fullPath) router.back()
+  else router.replace(parent)
 }

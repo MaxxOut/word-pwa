@@ -3,7 +3,7 @@ import { ref, computed, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { readingRepo } from './repo.js'
-import { removeTexts } from './texts.js'
+import { removeTexts, removeUserText } from './texts.js'
 import { parseChapter, readPercent, chapterSizes } from './domain.js'
 import { useSettingsStore } from '@/core/settings/store.js'
 import { goBack } from '@/shared/utils/navigation.js'
@@ -59,6 +59,52 @@ const segments = computed(() => {
 })
 const bookPercent = computed(() => Math.round(segments.value.reduce((a, s) => a + (s.width * s.fill) / 100, 0)))
 
+// ----- сквозные страницы книги -----
+// Страниц в главе — раскладкой её текста в скрытой ленте той же ширины (по главе за раз, не мешая листать).
+// Пока глава не посчитана — оценка по словам на странице текущей главы. Текущая глава — по настоящей раскладке
+const measure      = ref(null)
+const chapterPages = ref([]) // страниц в каждой главе при текущем размере; null — ещё не посчитано
+let measureKey = ''
+let measureRun = 0
+
+function measureAll() {
+  const el = measure.value
+  if (!el || !flow.value) return
+  const key = `${stride}x${viewport.value.getBoundingClientRect().height}x${getComputedStyle(flow.value).fontSize}`
+  if (key === measureKey) return
+  measureKey = key
+  const run = ++measureRun
+  el.style.width       = flow.value.style.width
+  el.style.columnWidth = flow.value.style.columnWidth
+  // стили абзацев scoped — абзацам ленты нужен тот же атрибут, что у книги
+  const scope = flow.value.getAttributeNames().find(a => a.startsWith('data-v-'))
+  chapterPages.value = text.chapters.map(() => null)
+  let i = 0
+  const step = () => {
+    if (run !== measureRun || !measure.value) return
+    el.replaceChildren(...text.chapters[i].text.split(/\n\s*\n/).map(p => p.trim()).filter(Boolean).map(p => {
+      const node = document.createElement('p')
+      if (scope) node.setAttribute(scope, '')
+      node.textContent = p.split(/\s+/).join(' ')
+      return node
+    }))
+    const next = [...chapterPages.value]
+    next[i] = Math.max(1, Math.round((el.scrollWidth + GAP) / stride))
+    chapterPages.value = next
+    if (++i < text.chapters.length) setTimeout(step, 0)
+    else el.replaceChildren()
+  }
+  setTimeout(step, 0)
+}
+
+const pagesOf = computed(() => {
+  const sizes   = chapterSizes(text)
+  const perPage = Math.max(1, sizes[chapter.value] / pages.value)
+  return sizes.map((size, i) => (i === chapter.value ? pages.value : chapterPages.value[i] ?? Math.max(1, Math.round(size / perPage))))
+})
+const bookPage   = computed(() => pagesOf.value.slice(0, chapter.value).reduce((a, b) => a + b, 0) + page.value + 1)
+const bookPages  = computed(() => pagesOf.value.reduce((a, b) => a + b, 0))
+
 // ----- раскладка -----
 
 function spans() {
@@ -108,6 +154,7 @@ function layout(word) {
   page.value  = word === 'end' ? pages.value - 1 : pageOfWord(word)
   setOffset()
   currentWord = firstWordOf(page.value)
+  measureAll()
 }
 
 // ----- листание -----
@@ -212,7 +259,7 @@ function save() {
 
 function flush() {
   clearTimeout(saveTimer)
-  if (!ready.value) return
+  if (!ready.value || removed) return
   const atEnd = chapter.value === lastChapter.value && page.value === pages.value - 1
   finished = finished || atEnd
   readingRepo.save({
@@ -237,15 +284,26 @@ function toggleTheme() {
 }
 
 // место чтения остаётся — скачать снова можно в любой момент
+// встроенный — место чтения остаётся, скачать снова можно в любой момент;
+// своя книга — навсегда, вместе с местом чтения
+let removed = false
+
 async function removeFromPhone() {
-  if (!await confirm({ message: t('reading.removeTextConfirm'), confirmText: t('common.delete'), danger: true })) return
-  await removeTexts([text.id])
+  const message = text.user ? t('reading.mine.removeConfirm', { title: text.title }) : t('reading.removeTextConfirm')
+  if (!await confirm({ message, confirmText: t('common.delete'), danger: true })) return
+  if (text.user) {
+    removed = true
+    clearTimeout(saveTimer)
+    await removeUserText(text.id)
+  } else {
+    await removeTexts([text.id])
+  }
   toast(t('reading.removed', { n: 1 }))
   back()
 }
 
 function back() {
-  goBack(router, { name: 'reading-topic', params: { topic: text.topic } })
+  goBack(router, text.user ? { name: 'reading-mine' } : { name: 'reading-topic', params: { topic: text.topic } })
 }
 
 // экран повернули, сменили размер текста — пересчитать страницы, остаться на том же слове
@@ -347,9 +405,11 @@ onBeforeUnmount(() => {
         <footer v-if="chapter === lastChapter" class="end">
           <div class="end-mark">{{ t('reading.end') }}</div>
           <div v-if="text.source" class="muted small">{{ t('reading.source', { s: text.source }) }}</div>
-          <UiButton variant="text" icon="delete" @click="removeFromPhone">{{ t('reading.removeText') }}</UiButton>
+          <UiButton variant="text" icon="delete" @click="removeFromPhone">{{ text.user ? t('reading.mine.remove') : t('reading.removeText') }}</UiButton>
         </footer>
       </article>
+      <!-- скрытая лента: считает страницы остальных глав для сквозной нумерации -->
+      <article ref="measure" class="flow flow-measure" :lang="text.library_id" aria-hidden="true" />
     </div>
 
     <!-- слева тема, по центру страницы -->
@@ -360,7 +420,7 @@ onBeforeUnmount(() => {
           :label="t('reading.theme')"
           @click="toggleTheme"
       />
-      <span class="num counter">{{ page + 1 }} / {{ pages }}</span>
+      <span class="num counter">{{ bookPage }} / {{ bookPages }}</span>
     </footer>
 
     <WordPeek ref="peek" :library-id="text.library_id" @closed="onPeekClosed" />
@@ -448,6 +508,7 @@ onBeforeUnmount(() => {
 }
 
 .viewport {
+  position: relative;
   flex: 1;
   min-height: 0;
   overflow: hidden;
@@ -471,6 +532,14 @@ onBeforeUnmount(() => {
   visibility: hidden;
 }
 .flow--ready { visibility: visible; }
+
+/* лента для подсчёта страниц — та же вёрстка, но невидима и вне потока */
+.flow-measure {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
 
 .flow p { margin-bottom: 0.75em; }
 

@@ -8,7 +8,7 @@ import App from '@/core/App.vue'
 import InstallView from '@/core/install/InstallView.vue'
 import { isStandalone, webAllowed } from '@/shared/utils/install.js'
 import { initUpdates } from '@/shared/utils/update.js'
-import router from '@/core/router.js'
+import router, { takeShare } from '@/core/router.js'
 import { i18n } from '@/core/i18n/index.js'
 import { ripple } from '@/shared/ui/ripple.js'
 import '@/shared/utils/scrollEdges.js'
@@ -43,6 +43,7 @@ async function boot() {
   await useLibraryStore().load()
 
   app.mount('#app')
+  takeShare()
 
   // просим браузер не удалять данные при нехватке места (молча, без запроса)
   navigator.storage?.persist?.().catch(() => {})
