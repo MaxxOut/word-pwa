@@ -109,3 +109,17 @@ export function baseCandidates(text, lang) {
   out.delete(w)
   return [...out].filter(c => c.length > 1)
 }
+
+// ответ ИИ — начальная форма нажатого (peeped → peep, children → child, gemacht → machen)
+// или вообще другое слово (в буфере остался ответ про прошлое слово). Неправильные глаголы
+// (went → go) — по справочнику, это проверяет книга
+export function looksLikeBase(form, base, lang) {
+  const f = form.trim().toLowerCase()
+  const b = base.trim().toLowerCase()
+  if (f === b || baseCandidates(f, lang).includes(b)) return true
+  // форма не короче основы: car — не форма card
+  if (f.length < b.length) return false
+  let n = 0
+  while (n < f.length && f[n] === b[n]) n++
+  return n >= 3 && n >= b.length - 2
+}

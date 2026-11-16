@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { reactive } from 'vue'
-import { parseChapter, readPercent, readStatus, LEVELS } from './domain.js'
+import { parseChapter, readPercent, readStatus, LEVELS, looksLikeBase } from './domain.js'
 import { textsOf, findText, TOPICS } from './content/index.js'
 import { catalogEntry } from './content/catalog-entry.js'
 import CATALOG from './content/catalog.js'
@@ -156,5 +156,19 @@ describe('свои тексты', async () => {
     expect(await getText(id)).toBeNull()
     expect(await readingRepo.get(id)).toBeUndefined()
     expect(await db.reading_texts.get(id)).toBeUndefined()
+  })
+})
+
+describe('looksLikeBase', () => {
+  it('начальная форма — да, другое слово — нет', () => {
+    expect(looksLikeBase('peeped', 'peep', 'en')).toBe(true)
+    expect(looksLikeBase('studies', 'study', 'en')).toBe(true)
+    expect(looksLikeBase('children', 'child', 'en')).toBe(true)
+    expect(looksLikeBase('contradictions', 'contradiction', 'en')).toBe(true)
+    expect(looksLikeBase('gemacht', 'machen', 'de')).toBe(true)
+    expect(looksLikeBase('enough', 'contradiction', 'en')).toBe(false)
+    expect(looksLikeBase('house', 'horse', 'en')).toBe(false)
+    expect(looksLikeBase('car', 'card', 'en')).toBe(false)
+    expect(looksLikeBase('plan', 'planet', 'en')).toBe(false)
   })
 })

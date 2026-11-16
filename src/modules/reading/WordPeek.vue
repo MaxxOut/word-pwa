@@ -3,9 +3,11 @@ import { ref, nextTick, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { wordsRepo } from '@/core/words/repo.js'
 import { DuplicateWordError, FormsLimitError } from '@/core/words/errors.js'
-import { cleanToken, exampleAround, baseCandidates } from './domain.js'
+import { cleanToken, exampleAround, baseCandidates, looksLikeBase } from './domain.js'
 import { useLibraryStore } from '@/core/library/store.js'
 import TranslateActions from '@/core/translate/TranslateActions.vue'
+import { lookupReferences } from '@/core/reference/reference.js'
+import { normalizeWord } from '@/core/words/domain.js'
 import ReferenceHits from '@/core/reference/ReferenceHits.vue'
 import { toast } from '@/shared/ui/feedback.js'
 import { speak, canSpeak } from '@/shared/utils/browser.js'
@@ -39,6 +41,7 @@ const example = ref('')
 const withExample = ref(true)
 const error   = ref('')
 const aiRow   = ref(null) // ответ ИИ с другим словом (начальная форма) — ждёт подтверждения
+const aiForm  = ref(false) // похоже на начальную форму нажатого; иначе — ответ про совсем другое слово
 const saving  = ref(false)
 const opened  = ref(0)    // номер открытия: блок перевода пересоздаётся — старый ответ не попадёт к новому слову
 const viaForm = ref(null) // нажатое записано формой: { word, form }
@@ -165,10 +168,7 @@ async function fromAi(row) {
   if (found.value) {
     const w = found.value
     // ответ про другое слово — не дописывать молча, показать и спросить
-    if (row.word.trim().toLowerCase() !== w.word.toLowerCase()) {
-      aiRow.value = row
-      return
-    }
+    if (row.word.trim().toLowerCase() !== w.word.toLowerCase()) return askAbout(row, w.word)
     await save(() => wordsRepo.update(w.id, {
       translation:   row.translation,
       transcription: w.transcription || row.transcription,
@@ -177,25 +177,32 @@ async function fromAi(row) {
     return
   }
   // ИИ вернул другое слово (peeped → peep) — данные только для него: показать и спросить
-  if (row.word.trim().toLowerCase() !== word.value.trim().toLowerCase()) {
-    aiRow.value = row
-    return
-  }
+  if (row.word.trim().toLowerCase() !== word.value.trim().toLowerCase()) return askAbout(row, word.value.trim() || clicked.value)
   await addAiRow(row)
+}
+
+// другое слово в ответе: начальная форма нажатого — сохранить её (нажатое — формой),
+// иначе в буфере, видимо, ответ про прошлое слово — только отдельным словом или отмена
+function askAbout(row, form) {
+  const base = normalizeWord(row.word)
+  aiForm.value = looksLikeBase(form, row.word, props.libraryId)
+    || lookupReferences(props.libraryId, form, { exact: true }).some(g => g.items.some(i => normalizeWord(i.word.word) === base))
+  aiRow.value = row
 }
 
 // ИИ вернул начальную форму: её — в словарь (или она уже там), нажатое — её формой
 // (нажатое уже отдельное слово без перевода — форму не делаем, начальная форма — просто новое слово)
 async function addAiRow(row) {
   const formWord = word.value.trim() || clicked.value
-  const base     = found.value ? null : await wordsRepo.find(props.libraryId, row.word)
+  const asForm   = aiForm.value && !found.value
+  const base     = asForm ? await wordsRepo.find(props.libraryId, row.word) : null
   if (base) return attachTo(base)
   return save(() => wordsRepo.create(props.libraryId, {
     word:          row.word,
     translation:   row.translation,
     transcription: row.transcription,
     examples:      [...new Set([...bookExample(), ...row.examples])],
-    forms:         found.value ? [] : [{ word: formWord }],
+    forms:         asForm ? [{ word: formWord }] : [],
   }), true)
 }
 
@@ -318,11 +325,11 @@ defineExpose({ open, close })
           </div>
           <!-- ответ ИИ про другое слово — сохранить его новым словом или отменить -->
           <div v-if="aiRow" class="choose">
-            <div class="muted small">{{ t('reading.aiBaseForm') }}</div>
+            <div class="muted small">{{ t(aiForm ? 'reading.aiBaseForm' : 'reading.aiOther') }}</div>
             <div><b>{{ aiRow.word }}</b> — {{ aiRow.translation.join(', ') }}</div>
             <div class="choose-buttons">
               <UiButton variant="text" @click="aiRow = null">{{ t('reading.cancel') }}</UiButton>
-              <UiButton variant="filled" :loading="saving" @click="addAiRow(aiRow)">{{ t('common.save') }}</UiButton>
+              <UiButton variant="filled" :loading="saving" @click="addAiRow(aiRow)">{{ t(aiForm ? 'common.save' : 'reading.aiAddOther') }}</UiButton>
             </div>
           </div>
           <UiButton v-else variant="filled" type="submit" :loading="saving" :disabled="!translation.trim()" block>
@@ -383,12 +390,12 @@ defineExpose({ open, close })
 
           <!-- ИИ вернул начальную форму — сохранить её или отменить -->
           <div v-if="aiRow" class="choose">
-            <div class="muted small">{{ t('reading.aiBaseForm') }}</div>
+            <div class="muted small">{{ t(aiForm ? 'reading.aiBaseForm' : 'reading.aiOther') }}</div>
             <div><b>{{ aiRow.word }}</b> — {{ aiRow.translation.join(', ') }}</div>
-            <div class="muted small">{{ t('reading.aiFormNote', { form: word.trim() || clicked }) }}</div>
+            <div v-if="aiForm" class="muted small">{{ t('reading.aiFormNote', { form: word.trim() || clicked }) }}</div>
             <div class="choose-buttons">
               <UiButton variant="text" @click="aiRow = null">{{ t('reading.cancel') }}</UiButton>
-              <UiButton variant="filled" :loading="saving" @click="addAiRow(aiRow)">{{ t('common.save') }}</UiButton>
+              <UiButton variant="filled" :loading="saving" @click="addAiRow(aiRow)">{{ t(aiForm ? 'common.save' : 'reading.aiAddOther') }}</UiButton>
             </div>
           </div>
           <UiButton v-else variant="filled" icon="add" type="submit" :loading="saving" block>

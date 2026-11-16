@@ -36,6 +36,7 @@ export default {
   addTitle:               'Додати слово',
   translationPlaceholder: 'яблуко',
   addTranslation:         'Переклад',
+  aiOtherWord:            'Відповідь ШІ про інше слово: «{word}». Скопіюйте відповідь про це слово',
   addExample:             'Приклад',
   ignore:                 'Знаю',
   create:                 'Додати',

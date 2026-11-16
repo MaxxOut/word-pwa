@@ -36,6 +36,7 @@ export default {
   addTitle:               'Добавить слово',
   translationPlaceholder: 'яблоко',
   addTranslation:         'Перевод',
+  aiOtherWord:            'Ответ ИИ про другое слово: «{word}». Скопируйте ответ про это слово',
   addExample:             'Пример',
   ignore:                 'Знаю',
   create:                 'Добавить',

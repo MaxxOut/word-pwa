@@ -127,6 +127,11 @@ function onOnline(text) {
 // подставляем только в новое слово — у существующего слово не меняем
 function onAi(row) {
   const f = form.value
+  // правим слово, а ответ про другое (в буфере старый ответ) — не подменять перевод молча
+  if (editing.value && normalizeWord(row.word) !== normalizeWord(f.word)) {
+    toast.error(t('words.aiOtherWord', { word: row.word }))
+    return
+  }
   if (!editing.value) f.word = row.word
   f.translation = [...row.translation]
   if (!f.transcription.trim() && row.transcription) f.transcription = row.transcription
