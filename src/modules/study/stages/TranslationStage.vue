@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { shuffle } from '@/shared/utils/shuffle.js'
 import AppIcon from '@/shared/components/AppIcon.vue'
@@ -7,6 +7,7 @@ import UiButton from '@/shared/ui/UiButton.vue'
 import StageHeader from './StageHeader.vue'
 import StageCard from './StageCard.vue'
 import { useStageQueue } from './useStageQueue.js'
+import { useAutoSpeak } from './autoSpeak.js'
 
 const props = defineProps({
   words:    { type: Array, required: true },
@@ -74,11 +75,17 @@ function next() {
 }
 
 buildOptions()
+
+// с изучаемого языка — слово звучит сразу, на него — после ответа
+const { say } = useAutoSpeak()
+if (props.mode === 'direct') watch(index, () => say(current.value.word), { immediate: true })
+else watch(answered, done => done && say(current.value.word))
 </script>
 
 <template>
   <StageHeader
       :title="title"
+      sound
       :counter="counter"
       :progress="progress"
       @exit="$emit('exit')"

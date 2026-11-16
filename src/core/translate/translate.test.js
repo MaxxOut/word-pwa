@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseAiLine, googleTranslateUrl } from './translate.js'
+import { parseAiLine, googleTranslateUrl, pickTranslation } from './translate.js'
 
 describe('parseAiLine', () => {
   it('reads a plain line', () => {
@@ -82,4 +82,19 @@ it('isEmail accepts only address-like values', async () => {
   expect(isEmail('a@b')).toBe(false)
   expect(isEmail('name@')).toBe(false)
   expect(isEmail('')).toBe(false)
+})
+
+describe('pickTranslation', () => {
+  it('skips junk and decodes entities', () => {
+    expect(pickTranslation({ responseData: { translatedText: '&amp;' }, matches: [{ translation: '-', match: 1 }] })).toBe('')
+    expect(pickTranslation({
+      responseData: { translatedText: '.' },
+      matches: [
+        { translation: '.', match: 0.98, quality: '74' },
+        { translation: 'Противоречия', match: 0.98, quality: '80' },
+        { translation: 'Другое', match: 0.97, quality: '90' },
+      ],
+    })).toBe('Противоречия')
+    expect(pickTranslation({ responseData: { translatedText: 'rock &amp; roll' } })).toBe('rock & roll')
+  })
 })

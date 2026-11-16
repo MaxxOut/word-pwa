@@ -193,8 +193,8 @@ watch(libraryId, () => fetchWords(), { immediate: true })
           <span class="item-word">
             <b>{{ w.word }}</b>
             <span v-if="w.transcription" class="muted small">[{{ w.transcription }}]</span>
-            <span v-if="w.forms?.length" class="muted small">· {{ w.forms.map(f => f.word).join(', ') }}</span>
           </span>
+          <span v-if="w.forms?.length" class="item-forms muted small">{{ w.forms.map(f => f.word).join(', ') }}</span>
           <span class="item-tr" :class="{ 'item-tr--none': !w.translation?.length }">
             {{ w.translation?.join(', ') || t('status.untranslated') }}
           </span>
@@ -303,16 +303,16 @@ watch(libraryId, () => fetchWords(), { immediate: true })
 }
 .item-word {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
-  gap: 0.5rem;
+  column-gap: 0.5rem;
   min-width: 0;
 }
 .item-word b {
   font-size: 1.0625rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
+.item-forms { overflow-wrap: anywhere; }
 .item-tr {
   font-size: 0.875rem;
   color: var(--muted);

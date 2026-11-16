@@ -69,4 +69,73 @@ export const THEORY = {
       ['Did you study for the exam?', 'Ты готовился к экзамену?', 'Ти готувався до іспиту?'],
     ],
   },
+
+  'future-simple': {
+    meaning: { ru: 'В будущем: решение, обещание, прогноз', uk: 'У майбутньому: рішення, обіцянка, прогноз' },
+    uses: {
+      ru: ['Решение в момент речи: I’m tired — I will take a taxi.', 'Обещание, предложение: I will help you tomorrow.', 'Прогноз, мнение о будущем: It will rain next week.'],
+      uk: ['Рішення в момент мовлення: I’m tired — I will take a taxi.', 'Обіцянка, пропозиція: I will help you tomorrow.', 'Прогноз, думка про майбутнє: It will rain next week.'],
+    },
+    form: [
+      ['+', 'I / you / he / she / we / they will work', "short: I'll, she'll"],
+      ['−', "I won't work", "she won't go"],
+      ['?', 'Will you work?', 'Will she go?'],
+    ],
+    markers: ['tomorrow', 'next week', 'next year', 'soon', 'in two days'],
+    notes: {
+      ru: ['will одно для всех лиц, глагол — в начальной форме: she will go (не will goes).', 'won’t = will not.', 'Договорённость на конкретное время — чаще Present Continuous: We are meeting friends tonight.'],
+      uk: ['will одне для всіх осіб, дієслово — у початковій формі: she will go (не will goes).', 'won’t = will not.', 'Домовленість на конкретний час — частіше Present Continuous: We are meeting friends tonight.'],
+    },
+    examples: [
+      ['I will call you tomorrow.', 'Я позвоню тебе завтра.', 'Я подзвоню тобі завтра.'],
+      ["They won't visit the museum next week.", 'На следующей неделе они не пойдут в музей.', 'Наступного тижня вони не підуть до музею.'],
+      ['Will Anna cook dinner?', 'Анна приготовит ужин?', 'Анна приготує вечерю?'],
+    ],
+  },
+
+  'past-continuous': {
+    meaning: { ru: 'Шло в определённый момент в прошлом', uk: 'Тривало в певний момент у минулому' },
+    uses: {
+      ru: ['Действие шло в момент в прошлом: At 8 pm yesterday I was cooking dinner.', 'Длинное действие прервали коротким: I was reading when the phone rang.', 'Два действия шли одновременно: She was cooking while he was cleaning.'],
+      uk: ['Дія тривала в момент у минулому: At 8 pm yesterday I was cooking dinner.', 'Довгу дію перервала коротка: I was reading when the phone rang.', 'Дві дії тривали одночасно: She was cooking while he was cleaning.'],
+    },
+    form: [
+      ['+', 'I / he / she was working', 'you / we / they were working'],
+      ['−', "I wasn't working", "they weren't working"],
+      ['?', 'Was she working?', 'Were you working?'],
+    ],
+    markers: ['at 8 pm yesterday', 'at that moment', 'at this time yesterday', 'when…', 'while…'],
+    notes: {
+      ru: ['was — для I / he / she / it, were — для you / we / they.', 'Прервавшее действие — в Past Simple: I was sleeping when you called.', 'Глаголы состояния (know, like, want) в Continuous не ставят.'],
+      uk: ['was — для I / he / she / it, were — для you / we / they.', 'Дія, що перервала, — у Past Simple: I was sleeping when you called.', 'Дієслова стану (know, like, want) у Continuous не ставлять.'],
+    },
+    examples: [
+      ['I was watching TV at 8 pm yesterday.', 'Вчера в 8 вечера я смотрел телевизор.', 'Учора о 8 вечора я дивився телевізор.'],
+      ["We weren't sleeping when the phone rang.", 'Мы не спали, когда зазвонил телефон.', 'Ми не спали, коли задзвонив телефон.'],
+      ['Were they playing football at that moment?', 'Они играли в футбол в тот момент?', 'Вони грали у футбол у той момент?'],
+    ],
+  },
+
+  'present-perfect': {
+    meaning: { ru: 'Уже сделано, важен результат сейчас', uk: 'Уже зроблено, важливий результат зараз' },
+    uses: {
+      ru: ['Результат важен сейчас: I have lost my keys (и сейчас их нет).', 'Опыт за жизнь, без точного времени: She has visited London twice.', 'Период ещё не закончился: I have drunk three coffees today.'],
+      uk: ['Результат важливий зараз: I have lost my keys (і зараз їх немає).', 'Досвід за життя, без точного часу: She has visited London twice.', 'Період ще не закінчився: I have drunk three coffees today.'],
+    },
+    form: [
+      ['+', 'I / you / we / they have worked', 'he / she / it has worked'],
+      ['−', "I haven't worked", "she hasn't gone"],
+      ['?', 'Have you worked?', 'Has she gone?'],
+    ],
+    markers: ['already', 'just', 'yet', 'ever', 'never', 'recently', 'this week', 'today'],
+    notes: {
+      ru: ['Глагол — 3-я форма: правильные на -ed (worked), неправильные — из справочника (go → gone, eat → eaten).', 'Точное время в прошлом (yesterday, last week, in 2020) — только Past Simple: I saw him yesterday (не have seen).', 'has — для he / she / it, have — для остальных.'],
+      uk: ['Дієслово — 3-тя форма: правильні на -ed (worked), неправильні — з довідника (go → gone, eat → eaten).', 'Точний час у минулому (yesterday, last week, in 2020) — тільки Past Simple: I saw him yesterday (не have seen).', 'has — для he / she / it, have — для решти.'],
+    },
+    examples: [
+      ['I have read this book.', 'Я прочитал эту книгу.', 'Я прочитав цю книгу.'],
+      ["Tom hasn't eaten breakfast today.", 'Том сегодня не завтракал.', 'Том сьогодні не снідав.'],
+      ['Have you ever swum in the sea?', 'Ты когда-нибудь плавал в море?', 'Ти колись плавав у морі?'],
+    ],
+  },
 }

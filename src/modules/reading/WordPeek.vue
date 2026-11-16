@@ -305,7 +305,7 @@ defineExpose({ open, close })
             <UiIconButton v-if="canSpeak()" class="say" icon="speak" :label="t('reading.speak')" @click="say(found.word)" />
           </div>
           <div class="muted translation translation--none">{{ t('status.untranslated') }}</div>
-          <div class="part">
+          <div class="part part--translate">
             <input
                 v-model="translation"
                 class="tr-input"
@@ -369,7 +369,7 @@ defineExpose({ open, close })
           </label>
 
           <!-- перевод — у кнопки -->
-          <div class="part">
+          <div class="part part--translate">
             <input
                 v-model="translation"
                 class="tr-input"
@@ -493,6 +493,11 @@ defineExpose({ open, close })
   gap: 0.375rem;
   padding-top: 0.5rem;
   border-top: 1px dashed var(--outline);
+}
+/* перевод отделён и снизу — от кнопки сохранения */
+.part--translate {
+  padding-bottom: 0.625rem;
+  border-bottom: 1px dashed var(--outline);
 }
 .maybe-row { display: flex; align-items: center; gap: 0.5rem; font-size: 0.9375rem; }
 .small-btn { min-height: 2rem; padding: 0.125rem 0.625rem; font-size: 0.8125rem; }

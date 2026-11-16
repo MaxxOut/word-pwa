@@ -16,6 +16,10 @@ export const defaults = {
     constructor: true,
     input:       true,
   },
+  // озвучка слова в изучении и повторении: перевод с изучаемого языка — сразу, остальное — после ответа
+  speech: {
+    auto: true,
+  },
   // в повторении только переводы, свои переключатели
   repeat_stages: {
     direct:  true,

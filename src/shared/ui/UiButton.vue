@@ -1,7 +1,8 @@
 <script setup>
 import AppIcon from '@/shared/components/AppIcon.vue'
 
-// variant: filled | tonal | outlined | text | danger
+// variant: filled | tonal | outlined | text | danger. Только иконка (без текста) — круглая кнопка,
+// подпись — через aria-label
 defineProps({
   variant: { type: String,  default: 'tonal' },
   icon:    { type: String,  default: null },
@@ -17,7 +18,7 @@ defineProps({
       v-ripple
       :type="type"
       class="btn"
-      :class="[`btn--${variant}`, { 'btn--block': block, 'btn--loading': loading }]"
+      :class="[`btn--${variant}`, { 'btn--block': block, 'btn--loading': loading, 'btn--round': icon && !$slots.default }]"
       :disabled="disabled || loading"
   >
     <span v-if="loading" class="spinner" />
@@ -44,6 +45,7 @@ defineProps({
   user-select: none;
 }
 .btn:has(.label):has(.icon, .spinner) { padding-left: 1rem; }
+.btn.btn--round { padding: 0; aspect-ratio: 1; border-radius: 50%; }
 
 .btn--filled   { background: var(--primary);   color: var(--on-primary); }
 .btn--tonal    { background: var(--primary-c); color: var(--on-primary-c); }

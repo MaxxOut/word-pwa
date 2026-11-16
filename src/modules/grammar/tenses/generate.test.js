@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { third, ing, past, makeItem, makeSession } from './generate.js'
+import { third, ing, past, pp, makeItem, makeSession, GENERATED } from './generate.js'
 import { VERBS, SUBJECTS } from './en.js'
 
 const verb = v => VERBS.find(x => x.v === v)
@@ -10,6 +10,7 @@ describe('формы глагола', () => {
     expect(['watch', 'study', 'go', 'play', 'wait'].map(third)).toEqual(['watches', 'studies', 'goes', 'plays', 'waits'])
     expect(['write', 'study', 'swim', 'visit', 'make'].map(v => ing(verb(v)))).toEqual(['writing', 'studying', 'swimming', 'visiting', 'making'])
     expect(['study', 'play', 'visit', 'go', 'read'].map(v => past(verb(v)))).toEqual(['studied', 'played', 'visited', 'went', 'read'])
+    expect(['go', 'make', 'swim', 'work'].map(v => pp(verb(v)))).toEqual(['gone', 'made', 'swum', 'worked'])
   })
 })
 
@@ -29,6 +30,33 @@ describe('задания', () => {
     expect(item('past-simple', 'question', 'go', 'you').sentence).toBe('Did you go to the park every day?')
   })
 
+  it('Future Simple, Past Continuous, Present Perfect', () => {
+    expect(item('future-simple', 'negative', 'go', 'she').sentence).toBe("She won't go to the park every day.")
+    expect(item('past-continuous', 'affirm', 'go', 'they').sentence).toBe('They were going to the park every day.')
+    expect(item('past-continuous', 'question', 'go', 'I').sentence).toBe('Was I going to the park every day?')
+    expect(item('present-perfect', 'affirm', 'go', 'Tom').sentence).toBe('Tom has gone to the park every day.')
+    expect(item('present-perfect', 'question', 'go', 'you').sentence).toBe('Have you gone to the park every day?')
+  })
+
+  it('тоже верная форма другого времени — не среди неверных', () => {
+    for (let n = 0; n < 30; n++) {
+      expect(item('future-simple', 'affirm', 'go', 'she').options).not.toContain('is going')
+      expect(item('past-continuous', 'affirm', 'go', 'she').options).not.toContain('went')
+      expect(item('present-perfect', 'affirm', 'read', 'I').options).not.toContain('read')
+    }
+  })
+
+  it('смешанная: по 5 заданий на время, в каждом есть утверждение, отрицание и вопрос', () => {
+    const tenses  = ['present-simple', 'future-simple', 'present-perfect']
+    const session = makeSession(tenses, { count: 15, irregular: 3 })
+    expect(session).toHaveLength(15)
+    for (const x of tenses) {
+      const own = session.filter(it => it.tense === x)
+      expect(own).toHaveLength(5)
+      expect(new Set(own.map(it => it.kind))).toEqual(new Set(['affirm', 'negative', 'question']))
+    }
+  })
+
   it('среди вариантов — то же время для другого лица (go / goes)', () => {
     for (let n = 0; n < 20; n++) {
       const it = item('present-simple', 'affirm', 'go', 'they')
@@ -38,7 +66,7 @@ describe('задания', () => {
   })
 
   it('варианты: 4 разных, правильный среди них', () => {
-    for (const tense of ['present-simple', 'present-continuous', 'past-simple']) {
+    for (const tense of GENERATED) {
       for (let n = 0; n < 30; n++) {
         for (const it of makeSession(tense)) {
           expect(it.options).toHaveLength(4)

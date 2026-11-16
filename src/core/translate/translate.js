@@ -17,14 +17,34 @@ export async function translateOnline(text, from, to, { email } = {}) {
 
   const res  = await fetch(url)
   const data = await res.json().catch(() => null)
-  const out  = data?.responseData?.translatedText?.trim() ?? ''
+  const raw  = data?.responseData?.translatedText?.trim() ?? ''
 
   // лимит сервис сообщает то кодом, то текстом вместо перевода
-  if (res.status === 429 || data?.responseStatus === 429 || data?.quotaFinished || /^MYMEMORY WARNING/i.test(out)) {
+  if (res.status === 429 || data?.responseStatus === 429 || data?.quotaFinished || /^MYMEMORY WARNING/i.test(raw)) {
     throw new TranslateLimitError()
   }
-  if (!res.ok || !out || Number(data?.responseStatus) !== 200) throw new Error('translate failed')
+  const out = res.ok && Number(data?.responseStatus) === 200 ? pickTranslation(data) : ''
+  if (!out) throw new Error('translate failed')
   return out
+}
+
+// в памяти MyMemory бывает мусор: «&amp;», «.», «-» вместо перевода.
+// Берём основной ответ, если он осмысленный, иначе лучший из вариантов
+export function pickTranslation(data) {
+  const candidates = [
+    data?.responseData?.translatedText,
+    ...[...(data?.matches ?? [])]
+      .sort((a, b) => (b.match - a.match) || (b.quality - a.quality))
+      .map(m => m.translation),
+  ]
+  return candidates.map(decodeEntities).find(s => /\p{L}/u.test(s)) ?? ''
+}
+
+function decodeEntities(text) {
+  return String(text ?? '')
+    .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(n))
+    .replace(/&(amp|lt|gt|quot|apos|#39);/g, (_, e) => ({ amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", '#39': "'" })[e])
+    .trim()
 }
 
 export function googleTranslateUrl(text, from, to) {

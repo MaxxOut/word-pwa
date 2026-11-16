@@ -1,11 +1,12 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { shuffle } from '@/shared/utils/shuffle.js'
 import UiButton from '@/shared/ui/UiButton.vue'
 import StageHeader from './StageHeader.vue'
 import StageCard from './StageCard.vue'
 import { useStageQueue } from './useStageQueue.js'
+import { useAutoSpeak } from './autoSpeak.js'
 
 const props = defineProps({
   words:        { type: Array,  required: true },
@@ -80,6 +81,9 @@ function showHint() {
   if (assembled.value.length === current.value.word.length) onWordComplete()
 }
 
+const { say } = useAutoSpeak()
+watch(completed, done => done && say(current.value.word))
+
 function onWordComplete() {
   completed.value = true
 
@@ -98,6 +102,7 @@ initWord()
 <template>
   <StageHeader
       :title="title"
+      sound
       :counter="counter"
       :progress="progress"
       @exit="$emit('exit')"

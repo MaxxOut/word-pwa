@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, nextTick } from 'vue'
+import { ref, computed, nextTick, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AppIcon from '@/shared/components/AppIcon.vue'
 import UiButton from '@/shared/ui/UiButton.vue'
@@ -7,6 +7,7 @@ import UiInput from '@/shared/ui/UiInput.vue'
 import StageHeader from './StageHeader.vue'
 import StageCard from './StageCard.vue'
 import { useStageQueue } from './useStageQueue.js'
+import { useAutoSpeak } from './autoSpeak.js'
 
 const props = defineProps({
   words:    { type: Array,  required: true },
@@ -62,11 +63,15 @@ function resetState() {
 }
 
 nextTick(() => inputRef.value?.focus())
+
+const { say } = useAutoSpeak()
+watch(checked, done => done && say(correctAnswer.value))
 </script>
 
 <template>
   <StageHeader
       :title="title"
+      sound
       :counter="counter"
       :progress="progress"
       @exit="$emit('exit')"

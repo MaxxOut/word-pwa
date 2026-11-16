@@ -153,7 +153,9 @@ function layout(word) {
   pages.value = Math.max(1, Math.round((el.scrollWidth + GAP) / stride))
   page.value  = word === 'end' ? pages.value - 1 : pageOfWord(word)
   setOffset()
-  currentWord = firstWordOf(page.value)
+  // слово сохраняем то же, а не первое на странице: иначе при каждом пересчёте (клавиатура,
+  // поворот) оно сдвигается к началу страницы и книга отматывается назад
+  currentWord = word === 'end' ? firstWordOf(page.value) : word
   measureAll()
 }
 

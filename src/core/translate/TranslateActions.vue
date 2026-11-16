@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useSettingsStore } from '@/core/settings/store.js'
 import { toast } from '@/shared/ui/feedback.js'
@@ -9,8 +9,9 @@ import { buildPrompt } from './prompt.js'
 
 // три способа перевести слово — всегда все три:
 // онлайн (MyMemory) → emit('online', текст); Google Переводчик — вручную;
-// промпт для ИИ → ответ в поле → emit('ai', { word, translation, transcription, examples }).
-// Поле ответа видно всегда — страховка: ответ можно вставить и без нового копирования промпта
+// промпт для ИИ → «Вставить ответ» из буфера → emit('ai', { word, translation, transcription, examples }).
+// Кнопка видна всегда — ответ можно вставить и без нового копирования промпта.
+// Поле ввода — только если буфер прочитать не дали: в книге клавиатура закрывала поле внизу экрана
 const props = defineProps({
   word:    { type: String, required: true },
   from:    { type: String, required: true }, // язык слова: en | de
@@ -32,6 +33,7 @@ const prompt  = ref('')    // не скопировался — показать
 let copied    = props.waiting ? makePrompt() : '' // последний промпт — отличить его от ответа, если вставили его
 const answer  = ref('')
 const error   = ref('')
+const manual  = ref(false) // буфер не прочитался — поле для ручной вставки
 
 function text() {
   return props.word.trim()
@@ -86,7 +88,16 @@ function apply() {
   emit('ai', row)
 }
 
-watch(answer, () => { error.value = '' })
+async function pasteAnswer() {
+  try {
+    answer.value = await navigator.clipboard.readText()
+  } catch {
+    manual.value = true
+    return
+  }
+  if (answer.value.trim()) apply()
+  else error.value = t('translate.emptyClipboard')
+}
 
 // вставили разбираемый ответ — применяем сразу; вставили промпт — сразу сказать;
 // набирают руками или не разобрался — кнопка
@@ -101,12 +112,25 @@ function onPaste() {
 <template>
   <div class="translate">
     <div class="buttons">
-      <UiButton class="tr-btn" variant="tonal" :loading="loading" :disabled="!word.trim()" @click="online">
-        {{ t('translate.online') }}
-      </UiButton>
-      <UiButton class="tr-btn" variant="tonal" :disabled="!word.trim()" @click="google">
-        {{ t('translate.google') }}
-      </UiButton>
+      <UiButton
+          class="tr-btn"
+          variant="tonal"
+          icon="translate"
+          :aria-label="t('translate.online')"
+          :title="t('translate.online')"
+          :loading="loading"
+          :disabled="!word.trim()"
+          @click="online"
+      />
+      <UiButton
+          class="tr-btn"
+          variant="tonal"
+          icon="g-translate"
+          :aria-label="t('translate.google')"
+          :title="t('translate.google')"
+          :disabled="!word.trim()"
+          @click="google"
+      />
       <UiButton class="tr-btn" variant="tonal" :disabled="!word.trim()" @click="copyPrompt">
         {{ t('translate.ai') }}
       </UiButton>
@@ -115,7 +139,11 @@ function onPaste() {
     <div class="paste">
       <div v-if="pasting" class="muted small">{{ prompt ? t('translate.copyFailed') : t('translate.copied') }}</div>
       <textarea v-if="prompt" class="area" readonly rows="4" :value="prompt" @focus="$event.target.select()" />
+      <UiButton v-if="!manual" class="tr-btn" variant="filled" icon="paste" @click="pasteAnswer">
+        {{ t('translate.pasteAnswer') }}
+      </UiButton>
       <textarea
+          v-else
           v-model="answer"
           class="area"
           rows="1"
@@ -123,10 +151,11 @@ function onPaste() {
           :aria-label="t('translate.answer')"
           autocomplete="off"
           spellcheck="false"
+          @input="error = ''"
           @paste="onPaste"
       />
       <div v-if="error" class="error small">{{ error }}</div>
-      <UiButton v-if="answer.trim()" class="tr-btn" variant="filled" @click="apply">
+      <UiButton v-if="manual && answer.trim()" class="tr-btn" variant="filled" @click="apply">
         {{ t('translate.apply') }}
       </UiButton>
     </div>

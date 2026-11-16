@@ -59,6 +59,14 @@ export default {
     legendRepeated: 'повторено',
     activityDay:    '{date}: вивчено {studied}, повторено {repeated}',
   },
+  theme: {
+    light: 'Світла тема',
+    dark:  'Темна тема',
+  },
+  sound: {
+    on:  'Увімкнути озвучення',
+    off: 'Вимкнути озвучення',
+  },
   settings: {
     tab: 'Слова',
     learning:              'Навчання',
@@ -67,6 +75,9 @@ export default {
     extraLetters:          'Зайві літери в конструкторі',
     extraLettersHint:      '0 — без зайвих',
     stages:                'Етапи',
+    speech:                'Озвучення',
+    autoSpeak:             'Автоозвучення слів',
+    autoSpeakHint:         'У вивченні та повторенні. З мови, що вивчаєте, — одразу, решта — після відповіді. Вимкнути можна й кнопкою в шапці заняття',
     daysAfterLearning:     'Днів після вивчення',
     daysAfterLearningHint: 'Нове слово потрапить у повторення через {n} дн.',
     daysAfterRepeat:       'Днів між повтореннями',

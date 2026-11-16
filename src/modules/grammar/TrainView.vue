@@ -18,7 +18,8 @@ import UiSpinner from '@/shared/ui/UiSpinner.vue'
 
 // тренировка времени: 10 предложений «выбери форму». Верно — дальше само; неверно — правильный
 // вариант и «Дальше». Итог: процент верных и сравнение с прошлой тренировкой; «Ещё 10» — новая.
-// id = 'mixed' — смешанная: все потренированные времена вперемешку, время угадывается по маркеру.
+// id = 'mixed' — смешанная: до 3 потренированных времён (давно не тренированные первыми), по 5 заданий
+// на каждое, вперемешку; время угадывается по маркеру.
 // Её итог — отдельной строкой (_mixed), а каждому времени из неё — свой процент (это тоже повторение)
 const props = defineProps({
   id: { type: String, required: true },
@@ -46,18 +47,26 @@ const progress = computed(() => (items.value.length ? ((index.value + (answered.
 
 if (!tense?.active) router.replace({ name: 'grammar-tenses' })
 
+const MIXED_TENSES = 3
+const PER_TENSE    = 5
+
 // смешанная — по потренированным временам; меньше двух — смешивать нечего
 async function topics() {
-  if (!mixed) return props.id
+  if (!mixed) return [props.id]
   const stats = await grammarRepo.all(libraryId)
-  return tensesOf(libraryId).filter(x => x.active && stats.has(x.id)).map(x => x.id)
+  return tensesOf(libraryId)
+    .filter(x => x.active && stats.has(x.id))
+    .sort((a, b) => stats.get(a.id).practiced_at.localeCompare(stats.get(b.id).practiced_at))
+    .slice(0, MIXED_TENSES)
+    .map(x => x.id)
 }
 
 async function start() {
   const recent = await grammarRepo.recentVerbs(libraryId).catch(() => ({}))
   const tenses = await topics()
   if (mixed && tenses.length < 2) return router.replace({ name: 'grammar-tenses' })
-  items.value    = makeSession(tenses, { recent })
+  const count  = mixed ? tenses.length * PER_TENSE : 10
+  items.value    = makeSession(tenses, { recent, count, irregular: Math.round(count / 5) })
   index.value    = 0
   chosen.value   = null
   correct.value  = 0

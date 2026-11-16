@@ -1,18 +1,35 @@
 <script setup>
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useSettingsStore } from '@/core/settings/store.js'
 import UiIconButton from '@/shared/ui/UiIconButton.vue'
 import UiProgress from '@/shared/ui/UiProgress.vue'
+import { canSpeak } from '@/shared/utils/browser.js'
+import { useAutoSpeak } from './autoSpeak.js'
 
-// шапка занятия: закрыть, заголовок, счётчик и полоса прогресса
+// шапка занятия: закрыть, заголовок, счётчик, полоса прогресса; под ней — тема и автоозвучка
 defineProps({
   title:    { type: String, required: true },
   counter:  { type: String, default: '' },
   progress: { type: Number, default: null }, // 0–100, null — без полосы
+  sound:    { type: Boolean, default: false }, // кнопки темы и автоозвучки — в этапах со словами
 })
 
 defineEmits(['exit'])
 
 const { t } = useI18n()
+const autoSpeak = useAutoSpeak()
+const settingsStore = useSettingsStore()
+
+// тема «как в системе» переключается на противоположную той, что сейчас видна
+const dark = computed(() => {
+  const theme = settingsStore.settings.appearance
+  return theme === 'dark' || (theme === 'system' && matchMedia('(prefers-color-scheme: dark)').matches)
+})
+
+function toggleTheme() {
+  settingsStore.update({ appearance: dark.value ? 'light' : 'dark' })
+}
 </script>
 
 <template>
@@ -24,6 +41,19 @@ const { t } = useI18n()
       <slot />
     </div>
     <UiProgress v-if="progress !== null" :value="progress" />
+    <div v-if="sound" class="stage-tools">
+      <UiIconButton
+          :icon="dark ? 'light' : 'dark'"
+          :label="t(dark ? 'study.theme.light' : 'study.theme.dark')"
+          @click="toggleTheme"
+      />
+      <UiIconButton
+          v-if="canSpeak()"
+          :icon="autoSpeak.on.value ? 'speak' : 'mute'"
+          :label="t(autoSpeak.on.value ? 'study.sound.off' : 'study.sound.on')"
+          @click="autoSpeak.toggle()"
+      />
+    </div>
   </header>
 </template>
 
@@ -44,6 +74,13 @@ const { t } = useI18n()
   align-items: center;
   gap: 0.25rem;
   margin-left: -0.5rem;
+}
+
+.stage-tools {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.25rem;
+  margin: -0.25rem -0.5rem -0.5rem 0;
 }
 
 h2 {
