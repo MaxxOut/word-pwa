@@ -20,8 +20,8 @@ export default {
     outcome: {
       ok:    'Помню',
       known: 'Знаю',
-      soon:  'Нужно закрепить',
-      new:   'Учить заново',
+      soon:  'Закрепить',
+      new:   'Заново',
     },
   },
   result: {
