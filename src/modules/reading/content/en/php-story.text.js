@@ -3,6 +3,7 @@ export default {
   topic:  'tech',
   level:  'B1',
   added:  '2026-11-15',
+  review: '2028-11',
   title:  'PHP: The Language Behind the Web',
   source: null,
   chapters: [

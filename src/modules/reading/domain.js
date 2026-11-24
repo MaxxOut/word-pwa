@@ -25,10 +25,58 @@ export function readPercent(text, chapter, word) {
   return total ? Math.min(100, Math.round((done / total) * 100)) : 0
 }
 
-// new — не открывали, reading — читается, finished — дочитан
-export function readStatus(progress) {
+// ----- стадии текста -----
+// new — не открывали, reading — читается, read — «Прочитано», learned — прочитан и все его слова
+// выучены (считается само), done — «Закончено». В записи о чтении: finished — прочитано, done — закончено
+export const STAGES = ['new', 'reading', 'read', 'learned', 'done']
+
+const isLearned = w => !!(w.is_learned || w.is_ignored)
+
+// слова текста выучены: есть хоть одно, и все выучены (или «Знаю»)
+export function wordsLearned(words) {
+  return words.length > 0 && words.every(isLearned)
+}
+
+// words — слова, связанные с текстом (уже найденные в словаре)
+export function textStage(progress, words = []) {
   if (!progress) return 'new'
-  return progress.finished ? 'finished' : 'reading'
+  if (progress.done) return 'done'
+  if (progress.finished) return wordsLearned(words) ? 'learned' : 'read'
+  return 'reading'
+}
+
+// что учить из текста: невыученные с переводом
+export function wordsToStudy(words) {
+  return words.filter(w => !isLearned(w) && (w.translation ?? []).some(x => x.trim()))
+}
+
+// следующий текст после законченного: той же темы, на уровень выше и не законченный;
+// такого нет — того же уровня. stageOf(id) → стадия. Сначала начатые, потом новые по дате
+export function nextText(texts, current, stageOf) {
+  const level = LEVELS.indexOf(current.level)
+  const open  = texts.filter(x => x.id !== current.id && x.topic === current.topic && stageOf(x.id) !== 'done')
+  const rank  = x => (stageOf(x.id) === 'reading' ? 0 : 1)
+  for (const l of [level + 1, level]) {
+    const list = open.filter(x => LEVELS.indexOf(x.level) === l)
+      .sort((a, b) => rank(a) - rank(b) || (b.added ?? '').localeCompare(a.added ?? ''))
+    if (list.length) return list[0]
+  }
+  return null
+}
+
+// слова словаря, что встречаются в тексте целым словом (или формой), без учёта регистра.
+// Фраза из нескольких слов — подстрокой по границам слов
+export function matchWords(text, words) {
+  const body   = text.chapters.map(c => c.text).join('\n').toLowerCase()
+  const tokens = new Set(body.split(/\s+/).map(cleanToken).filter(Boolean))
+  const has = raw => {
+    const w = raw.trim().toLowerCase()
+    if (!w) return false
+    if (!/\s/.test(w)) return tokens.has(w)
+    const esc = w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    return new RegExp(`(^|[^\\p{L}\\p{N}])${esc}($|[^\\p{L}\\p{N}])`, 'u').test(body)
+  }
+  return words.filter(w => has(w.word) || (w.forms ?? []).some(f => has(f.word))).map(w => w.id)
 }
 
 // ----- слово из текста -----

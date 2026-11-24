@@ -26,6 +26,13 @@ const form  = useSettingsForm(['learning', 'stages', 'speech'])
         :min="0"
         :max="5"
     />
+    <UiStepper
+        v-model="form.learning.choices"
+        :label="t('study.settings.choices')"
+        :hint="t('study.settings.choicesHint')"
+        :min="4"
+        :max="8"
+    />
     <h4 class="settings-sub">{{ t('study.settings.stages') }}</h4>
     <UiSwitch v-for="s in STAGES" :key="s.key" v-model="form.stages[s.key]" :label="t(s.title)" />
     <template v-if="canSpeak()">

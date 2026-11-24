@@ -6,7 +6,21 @@ export default {
   status: {
     new:      'Новый',
     reading:  '{n}%',
-    finished: 'Прочитан',
+    read:     'Прочитан',
+    learned:  'Слова выучены',
+    done:     'Закончен',
+  },
+  stage: {
+    reading:        'Читается',
+    read:           'Прочитан',
+    learned:        'Прочитан, слова выучены',
+    done:           'Закончен',
+    words:          'Слов текста выучено: {n} из {total}',
+    markRead:       'Прочитано',
+    study:          'Учить слова текста ({n})',
+    markDone:       'Закончено',
+    next:           'Дальше можно почитать:',
+    nothingToStudy: 'Невыученных слов с переводом в этом тексте нет',
   },
   sorts: {
     levelAsc:  'Лёгкие',

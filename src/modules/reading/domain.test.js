@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { reactive } from 'vue'
-import { parseChapter, readPercent, readStatus, LEVELS, looksLikeBase } from './domain.js'
+import { parseChapter, readPercent, textStage, wordsToStudy, nextText, matchWords, LEVELS, looksLikeBase } from './domain.js'
 import { textsOf, findText, TOPICS } from './content/index.js'
 import { catalogEntry } from './content/catalog-entry.js'
 import CATALOG from './content/catalog.js'
@@ -20,10 +20,55 @@ describe('reading', () => {
     expect(readPercent(text, 1, 2)).toBe(75)
   })
 
-  it('статус текста', () => {
-    expect(readStatus(null)).toBe('new')
-    expect(readStatus({ finished: false })).toBe('reading')
-    expect(readStatus({ finished: true })).toBe('finished')
+  it('стадия текста', () => {
+    const learned = { is_learned: true }
+    const fresh   = { is_learned: false }
+    expect(textStage(null)).toBe('new')
+    expect(textStage({ finished: false })).toBe('reading')
+    expect(textStage({ finished: true })).toBe('read')
+    expect(textStage({ finished: true }, [])).toBe('read')
+    expect(textStage({ finished: true }, [learned, fresh])).toBe('read')
+    expect(textStage({ finished: true }, [learned, { is_ignored: true }])).toBe('learned')
+    expect(textStage({ finished: false }, [learned])).toBe('reading')
+    expect(textStage({ finished: true, done: true }, [fresh])).toBe('done')
+  })
+
+  it('что учить из текста — невыученные с переводом', () => {
+    const words = [
+      { id: 1, translation: ['кот'] },
+      { id: 2, translation: [] },
+      { id: 3, translation: ['пёс'], is_learned: true },
+      { id: 4, translation: ['дом'], is_ignored: true },
+    ]
+    expect(wordsToStudy(words).map(w => w.id)).toEqual([1])
+  })
+
+  it('следующий текст — уровнем выше, не законченный; нет — того же уровня', () => {
+    const cur   = { id: 'a', topic: 'tech', level: 'B1' }
+    const texts = [
+      cur,
+      { id: 'b', topic: 'tech', level: 'B2', added: '2026-01-01' },
+      { id: 'c', topic: 'tech', level: 'B2', added: '2026-02-01' },
+      { id: 'd', topic: 'tales', level: 'B2', added: '2026-03-01' },
+      { id: 'e', topic: 'tech', level: 'B1', added: '2026-01-01' },
+    ]
+    const stages = { b: 'reading' }
+    expect(nextText(texts, cur, id => stages[id] ?? 'new').id).toBe('b')
+    expect(nextText(texts, cur, () => 'new').id).toBe('c')
+    expect(nextText(texts, cur, id => (id[0] === 'b' || id[0] === 'c' ? 'done' : 'new')).id).toBe('e')
+    expect(nextText(texts, cur, () => 'done')).toBe(null)
+  })
+
+  it('слова словаря в тексте — целым словом, формой, фразой', () => {
+    const text  = { chapters: [{ text: 'The Cat sat.' }, { text: 'Dogs give up easily.' }] }
+    const words = [
+      { id: 1, word: 'cat' },
+      { id: 2, word: 'ca' },
+      { id: 3, word: 'dog', forms: [{ word: 'dogs' }] },
+      { id: 4, word: 'give up' },
+      { id: 5, word: 'up easy' },
+    ]
+    expect(matchWords(text, words)).toEqual([1, 3, 4])
   })
 
   it('каталог совпадает с файлами текстов (иначе — npm run texts)', () => {
@@ -156,6 +201,33 @@ describe('свои тексты', async () => {
     expect(await getText(id)).toBeNull()
     expect(await readingRepo.get(id)).toBeUndefined()
     expect(await db.reading_texts.get(id)).toBeUndefined()
+  })
+
+  it('слова текста: сверка со словарём, связь из книги, стадия', async () => {
+    const lib  = 'reading-words-test'
+    const text = { id: 'user-words-test', library_id: lib, chapters: [{ text: 'A brave cat.' }] }
+    const cat  = { id: 'w1', library_id: lib, word: 'cat', translation: ['кот'], is_learned: true }
+    const dog  = { id: 'w2', library_id: lib, word: 'dog', translation: ['пёс'], is_learned: false }
+    await db.words.bulkPut([cat, dog])
+
+    expect((await readingRepo.words(text)).map(w => w.id)).toEqual(['w1'])
+    await readingRepo.save({ text_id: text.id, library_id: lib, chapter: 0, word: 3, percent: 100, finished: true })
+    expect((await readingRepo.stages(lib)).get(text.id).stage).toBe('learned')
+
+    await readingRepo.link(text.id, lib, 'w2') // dog в тексте нет — добавили из книги
+    expect((await readingRepo.words(text)).map(w => w.id).sort()).toEqual(['w1', 'w2'])
+    expect((await readingRepo.stages(lib)).get(text.id)).toEqual({ stage: 'read', percent: 100 })
+
+    await readingRepo.save({ text_id: text.id, library_id: lib, chapter: 0, word: 0, percent: 10 })
+    const row = await readingRepo.get(text.id)
+    expect(row).toMatchObject({ finished: true, matched: 2, word_ids: ['w1', 'w2'], percent: 10 })
+
+    // словарь изменился (слово добавили не из книги) — текст сверяется заново
+    await db.words.put({ id: 'w3', library_id: lib, word: 'brave', translation: ['смелый'] })
+    expect((await readingRepo.words(text)).map(w => w.id).sort()).toEqual(['w1', 'w2', 'w3'])
+
+    await db.words.bulkDelete(['w1', 'w2', 'w3'])
+    await db.reading.delete(text.id)
   })
 })
 

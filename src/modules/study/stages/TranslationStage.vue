@@ -8,6 +8,8 @@ import StageHeader from './StageHeader.vue'
 import StageCard from './StageCard.vue'
 import { useStageQueue } from './useStageQueue.js'
 import { useAutoSpeak } from './autoSpeak.js'
+import { useSettingsStore } from '@/core/settings/store.js'
+import { pickDistractors } from '../domain.js'
 
 const props = defineProps({
   words:    { type: Array, required: true },
@@ -34,15 +36,21 @@ const question = computed(() =>
 )
 const correctAnswer = computed(() => answerOf(current.value))
 
-// 1 правильный + 3 случайных из других слов — собираются один раз на слово
+// 1 правильный + (N−1) других (N — настройка 4–8): сначала слова занятия, потом похожей длины —
+// чтобы не угадывать исключением знакомых. Собираются один раз на слово
+const settingsStore = useSettingsStore()
+const choices = computed(() => settingsStore.settings.learning?.choices ?? 4)
 const options = ref([])
 
 function buildOptions() {
-  const wrong = shuffle(props.allWords.filter(w => w.id !== current.value.id))
-    .map(answerOf)
-    .filter((v, i, arr) => v !== correctAnswer.value && arr.indexOf(v) === i)
-    .slice(0, 3)
-    .map(value => ({ value, correct: false }))
+  const other = w => w.id !== current.value.id
+  const wrong = pickDistractors(
+    correctAnswer.value,
+    props.words.filter(other),
+    props.allWords.filter(other),
+    choices.value - 1,
+    answerOf,
+  ).map(value => ({ value, correct: false }))
 
   options.value = shuffle([...wrong, { value: correctAnswer.value, correct: true }])
 }
@@ -95,7 +103,7 @@ else watch(answered, done => done && say(current.value.word))
     <div class="question-text">{{ question }}</div>
   </StageCard>
 
-  <div :key="index" class="options">
+  <div :key="index" class="options" :class="{ 'options--grid': options.length > 4 }">
     <button
         v-for="option in options"
         :key="option.value"
@@ -151,6 +159,8 @@ else watch(answered, done => done && say(current.value.word))
   text-align: left;
   transition: background-color 0.15s, opacity 0.15s;
 }
+.options--grid { grid-template-columns: 1fr 1fr; }
+.options--grid .option { min-height: 3rem; padding: 0.5rem 0.75rem; font-size: 1rem; overflow-wrap: anywhere; }
 .option[aria-disabled="true"] { cursor: default; }
 
 .option--correct { background: var(--success-c); color: var(--on-success-c); box-shadow: none; animation: pop 0.3s; }

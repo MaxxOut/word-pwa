@@ -5,15 +5,19 @@ import { useI18n } from 'vue-i18n'
 import { findTense } from './tenses/index.js'
 import { grammarRepo } from './repo.js'
 import { daysSince, whenKey } from './tenses/result.js'
+import { levelsOf, levelFor } from './tenses/levels.js'
 import { useLibraryStore } from '@/core/library/store.js'
+import { useSettingsStore } from '@/core/settings/store.js'
 import { speak, canSpeak } from '@/shared/utils/browser.js'
 import AppTopBar from '@/core/shell/AppTopBar.vue'
 import UiButton from '@/shared/ui/UiButton.vue'
 import UiIconButton from '@/shared/ui/UiIconButton.vue'
+import UiSegmented from '@/shared/ui/UiSegmented.vue'
 import AppIcon from '@/shared/components/AppIcon.vue'
 
 // время: смысл, когда употребляется, формулы, маркеры, подводные камни, примеры; внизу — тренировка.
-// Уже тренировались — результат и «Тренировать» ещё и сверху: повторить можно в любой момент
+// Уже тренировались — результат и «Тренировать» ещё и сверху: повторить можно в любой момент.
+// Над нижней кнопкой — уровень фраз (запоминается в настройках, общий для всех времён)
 const props = defineProps({
   id: { type: String, required: true },
 })
@@ -21,6 +25,7 @@ const props = defineProps({
 const router        = useRouter()
 const { t, locale } = useI18n()
 const library       = useLibraryStore()
+const settings      = useSettingsStore()
 
 const tense = computed(() => findTense(library.current?.id, props.id))
 const th    = computed(() => tense.value?.theory)
@@ -34,6 +39,13 @@ const stats = ref(null)
 watch(() => library.current?.id, async id => {
   stats.value = id ? await grammarRepo.get(id, props.id) ?? null : null
 }, { immediate: true })
+
+// уровни, для которых у времени есть фразы
+const levels = computed(() => levelsOf(props.id).map(value => ({ value, label: `${value} · ${t(`grammar.tenses.levels.${value}`)}` })))
+const level  = computed({
+  get: () => levelFor(props.id, settings.settings.grammar?.level ?? 1),
+  set: value => settings.update({ grammar: { level: value } }),
+})
 
 function train() {
   router.push({ name: 'grammar-train', params: { id: props.id } })
@@ -97,6 +109,11 @@ function train() {
       </div>
     </section>
 
+    <section v-if="levels.length > 1" class="block level">
+      <UiSegmented v-model="level" :options="levels" :label="t('grammar.tenses.level')" />
+      <p class="muted small">{{ t(`grammar.tenses.levelHint.${level}`) }}</p>
+    </section>
+
     <div class="stage-footer">
       <UiButton variant="filled" icon="train" @click="train">{{ t('grammar.tenses.train') }}</UiButton>
     </div>
@@ -139,6 +156,7 @@ function train() {
   gap: 0.375rem;
   font-size: 0.9375rem;
 }
+.level { background: var(--surface); box-shadow: var(--shadow-card); }
 .note { background: var(--primary-c); color: var(--on-primary-c); }
 
 .bullets {

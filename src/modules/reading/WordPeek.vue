@@ -25,8 +25,9 @@ const props = defineProps({
   libraryId: { type: String, required: true },
 })
 
-// closed — книга досчитает страницы, отложенные, пока была клавиатура
-const emit = defineEmits(['closed'])
+// closed — книга досчитает страницы, отложенные, пока была клавиатура;
+// linked — слово сохранено из книги (id): книга свяжет его с текстом
+const emit = defineEmits(['closed', 'linked'])
 
 const { t }   = useI18n()
 const library = useLibraryStore()
@@ -224,6 +225,7 @@ async function attachTo(target) {
   error.value  = ''
   try {
     await wordsRepo.addForm(target.id, { word: formWord })
+    emit('linked', target.id)
     close()
     waitingFor.value = ''
     toast.success(t('reading.formAdded', { form: formWord, word: target.word }))
@@ -237,7 +239,8 @@ async function attachTo(target) {
 
 
 // добавлено из справочника — пузырь сделал своё
-function onReferenceSaved({ created }) {
+function onReferenceSaved({ word: saved, created }) {
+  if (saved?.id) emit('linked', saved.id)
   close()
   waitingFor.value = ''
   if (created) library.load()
@@ -247,7 +250,8 @@ async function save(action, created) {
   saving.value = true
   error.value  = ''
   try {
-    await action()
+    const saved = await action()
+    if (saved?.id) emit('linked', saved.id)
     close()
     waitingFor.value = ''
     toast.success(t(created ? 'word.created' : 'word.updated'))

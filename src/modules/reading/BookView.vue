@@ -1,10 +1,11 @@
 <script setup>
-import { ref, computed, nextTick, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { readingRepo } from './repo.js'
 import { removeTexts, removeUserText } from './texts.js'
-import { parseChapter, readPercent, chapterSizes } from './domain.js'
+import { parseChapter, readPercent, chapterSizes, textStage, wordsToStudy, nextText } from './domain.js'
+import { textsOf } from './content/index.js'
 import { useSettingsStore } from '@/core/settings/store.js'
 import { goBack } from '@/shared/utils/navigation.js'
 import UiIconButton from '@/shared/ui/UiIconButton.vue'
@@ -42,7 +43,6 @@ const flow     = ref(null)
 
 let stride      = 0
 let currentWord = 0
-let finished    = false
 
 const lastChapter = computed(() => text.chapters.length - 1)
 const paragraphs  = computed(() => parseChapter(text.chapters[chapter.value].text))
@@ -263,15 +263,79 @@ function flush() {
   clearTimeout(saveTimer)
   if (!ready.value || removed) return
   const atEnd = chapter.value === lastChapter.value && page.value === pages.value - 1
-  finished = finished || atEnd
   readingRepo.save({
     text_id:    text.id,
     library_id: text.library_id,
     chapter:    chapter.value,
     word:       currentWord,
     percent:    atEnd ? 100 : readPercent(text, chapter.value, currentWord),
-    finished,
-  }).catch(() => {})
+    // дочитал до конца — «прочитано» и без кнопки (как раньше); снимается только сбросом
+    ...(atEnd && { finished: true }),
+  }).then(row => { if (atEnd) progress.value = row }).catch(() => {})
+}
+
+// ----- стадия текста: кнопки в конце -----
+// прочитано → слова выучены (само, по словам текста) → закончено; закончил — следующий текст
+
+const progress  = ref(null) // запись о чтении: finished, done
+const textWords = ref([])   // слова словаря, связанные с текстом
+const stage     = computed(() => textStage(progress.value ?? {}, textWords.value))
+const toStudy   = computed(() => wordsToStudy(textWords.value))
+const next      = ref(null) // следующий текст после «Закончено»
+
+async function loadWords() {
+  textWords.value = await readingRepo.words(text).catch(() => [])
+}
+
+// слово добавили из книги — связать с текстом
+async function onLinked(id) {
+  await readingRepo.link(text.id, text.library_id, id).catch(() => {})
+  loadWords()
+}
+
+async function setStage(fields) {
+  try {
+    progress.value = await readingRepo.save({ text_id: text.id, library_id: text.library_id, ...fields })
+  } catch {
+    toast.error(t('errors.save'))
+  }
+}
+
+function markRead() {
+  setStage({ finished: true })
+}
+
+async function markDone() {
+  await setStage({ finished: true, done: true })
+  findNext()
+}
+
+// встроенный текст — следующий той же темы уровнем выше; у своих книг тем нет
+async function findNext() {
+  if (text.user || !text.topic) return
+  const stages = await readingRepo.stages(text.library_id).catch(() => new Map())
+  next.value = nextText(textsOf(text.library_id), text, id => stages.get(id)?.stage ?? 'new')
+}
+
+function studyText() {
+  if (!toStudy.value.length) {
+    toast(t('reading.stage.nothingToStudy'))
+    return
+  }
+  router.push({ name: 'study', query: { ids: toStudy.value.map(w => w.id).join(',') } })
+}
+
+// кнопки в конце меняются (стадия, «Дальше») — число страниц главы могло измениться; страница та же
+watch([stage, () => toStudy.value.length, () => textWords.value.length, next], async () => {
+  if (!ready.value || chapter.value !== lastChapter.value) return
+  await nextTick()
+  pages.value = Math.max(1, Math.round((flow.value.scrollWidth + GAP) / stride))
+  page.value  = Math.min(page.value, pages.value - 1)
+  setOffset()
+})
+
+function openNext() {
+  router.replace({ name: 'reader', params: { id: next.value.id } })
 }
 
 // ----- тема прямо из книги -----
@@ -316,8 +380,10 @@ onMounted(async () => {
   const saved = await readingRepo.get(text.id).catch(() => null)
   if (saved) {
     chapter.value = Math.min(saved.chapter, lastChapter.value)
-    finished      = !!saved.finished
   }
+  progress.value = saved ?? null
+  loadWords()
+  if (saved?.done) findNext()
   await nextTick()
   await document.fonts?.ready
   layout(saved?.word ?? 0)
@@ -407,6 +473,28 @@ onBeforeUnmount(() => {
         <footer v-if="chapter === lastChapter" class="end">
           <div class="end-mark">{{ t('reading.end') }}</div>
           <div v-if="text.source" class="muted small">{{ t('reading.source', { s: text.source }) }}</div>
+          <!-- стадия и кнопки: прочитано → учить слова текста → закончено -->
+          <div class="stage">
+            <span class="stage-label" :class="`stage--${stage}`">{{ t(`reading.stage.${stage}`) }}</span>
+            <span v-if="textWords.length" class="muted small">
+              {{ t('reading.stage.words', { n: textWords.length - toStudy.length, total: textWords.length }) }}
+            </span>
+          </div>
+          <div class="stage-actions">
+            <UiButton v-if="stage === 'reading' || stage === 'new'" variant="outlined" icon="check" @click="markRead">
+              {{ t('reading.stage.markRead') }}
+            </UiButton>
+            <UiButton v-if="$router.hasRoute('study') && toStudy.length" variant="outlined" icon="text-words" @click="studyText">
+              {{ t('reading.stage.study', { n: toStudy.length }) }}
+            </UiButton>
+            <UiButton v-if="stage !== 'done'" variant="filled" icon="done-all" @click="markDone">
+              {{ t('reading.stage.markDone') }}
+            </UiButton>
+          </div>
+          <div v-if="next" class="next">
+            <span class="muted small">{{ t('reading.stage.next') }}</span>
+            <UiButton variant="tonal" @click="openNext">{{ next.level }} · {{ next.title }}</UiButton>
+          </div>
           <UiButton variant="text" icon="delete" @click="removeFromPhone">{{ text.user ? t('reading.mine.remove') : t('reading.removeText') }}</UiButton>
         </footer>
       </article>
@@ -425,7 +513,7 @@ onBeforeUnmount(() => {
       <span class="num counter">{{ bookPage }} / {{ bookPages }}</span>
     </footer>
 
-    <WordPeek ref="peek" :library-id="text.library_id" @closed="onPeekClosed" />
+    <WordPeek ref="peek" :library-id="text.library_id" @closed="onPeekClosed" @linked="onLinked" />
 
     <UiSheet v-model="contents" :title="t('reading.contents')">
       <ol class="toc">
@@ -560,6 +648,33 @@ onBeforeUnmount(() => {
   padding: 1.5rem 0;
   text-align: center;
   break-inside: avoid;
+}
+.stage {
+  display: grid;
+  justify-items: center;
+  gap: 0.25rem;
+  margin-top: 0.5rem;
+}
+.stage-label {
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.5rem;
+  background: var(--container-hi);
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+.stage--read, .stage--learned { background: var(--primary-c); color: var(--on-primary-c); }
+.stage--done { background: var(--success-c); color: var(--on-success-c); }
+.stage-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+}
+.next {
+  display: grid;
+  justify-items: center;
+  gap: 0.25rem;
+  margin-top: 0.5rem;
 }
 .end-mark {
   font-family: var(--font-title);

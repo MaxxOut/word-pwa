@@ -35,7 +35,7 @@ export function soonDueAt(now = new Date()) {
 }
 
 // итог повторения слова: ok — помню (обычный график; «Знаю» → обычное выученное),
-// known — оставить «Знаю», soon — нужно закрепить, new — учить заново
+// known — «Знаю» (оставить или перевести в «Знаю»), soon — нужно закрепить, new — учить заново
 export const OUTCOME = { OK: 'ok', KNOWN: 'known', SOON: 'soon', NEW: 'new' }
 
 // «нужно закрепить» действует только у обычного выученного (отметили «Знаю» — уже нет)
@@ -75,4 +75,60 @@ export function pickForRepeat(words, repeatSettings, now = new Date()) {
 
 export function dueCount(words, repeatSettings, now = new Date()) {
   return words.filter(w => isDue(w, repeatSettings, now)).length
+}
+
+// ----- быстрый старт занятия -----
+// готовый набор: первые n из доступных (новые сначала — как в pickForStudy)
+export function pickSet(pool, n) {
+  return pool.slice(0, n).map(w => w.id)
+}
+
+// замена слова набора на случайное из доступных, которых в наборе нет; нет таких — null
+export function replaceInSet(ids, id, pool, random = Math.random) {
+  const free = pool.filter(w => !ids.includes(w.id))
+  if (!free.length) return null
+  const pick = free[Math.floor(random() * free.length)]
+  return ids.map(x => (x === id ? pick.id : x))
+}
+
+// добавить в набор следующее (случайное) из доступных
+export function addToSet(ids, pool, random = Math.random) {
+  const free = pool.filter(w => !ids.includes(w.id))
+  return free.length ? [...ids, free[Math.floor(random() * free.length)].id] : ids
+}
+
+// ----- варианты ответа -----
+// отвлекалки: сначала слова того же занятия, потом похожей длины; одинаковых ответов нет
+export function pickDistractors(correct, session, extra, count, answerOf, random = Math.random) {
+  const len   = correct.length
+  const score = (v, own) => Math.abs(v.length - len) + (own ? 0 : 3) + random() * 2
+  const seen  = new Set([correct.toLowerCase()])
+  const all   = [...session.map(w => [answerOf(w), true]), ...extra.map(w => [answerOf(w), false])]
+    .filter(([v]) => v)
+    .map(([v, own]) => ({ v, s: score(v, own) }))
+    .sort((a, b) => a.s - b.s)
+  const out = []
+  for (const { v } of all) {
+    if (out.length >= count) break
+    if (seen.has(v.toLowerCase())) continue
+    seen.add(v.toLowerCase())
+    out.push(v)
+  }
+  return out
+}
+
+// ----- этап «В контексте» -----
+const escape = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+// пример, где есть именно эта форма слова целым словом (без учёта регистра):
+// { before, match, after } или null
+export function contextOf(word) {
+  const re = new RegExp(`(^|[^\\p{L}\\p{N}'’-])(${escape(word.word.trim())})(?=$|[^\\p{L}\\p{N}'’-])`, 'iu')
+  for (const ex of word.examples ?? []) {
+    const m = re.exec(ex)
+    if (!m) continue
+    const start = m.index + m[1].length
+    return { before: ex.slice(0, start), match: m[2], after: ex.slice(start + m[2].length) }
+  }
+  return null
 }

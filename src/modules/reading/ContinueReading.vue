@@ -8,8 +8,8 @@ import { useLibraryStore } from '@/core/library/store.js'
 import UiButton from '@/shared/ui/UiButton.vue'
 
 // плитка главной: последняя открытая книга на запомненном месте; нет такой — в «Чтение».
-// Видна и без слов в библиотеке
-defineProps({ words: { type: Array, required: true } })
+// Видна и без слов в библиотеке. В самом «Чтении» (inSection) — только если есть начатая книга
+defineProps({ words: { type: Array, default: null }, inSection: Boolean })
 
 const router  = useRouter()
 const { t }   = useI18n()
@@ -32,7 +32,7 @@ function open() {
 </script>
 
 <template>
-  <section class="read">
+  <section v-if="last || !inSection" class="read">
     <div class="label">{{ last ? t('reading.continue') : t('reading.title') }}</div>
     <b v-if="last" class="title">{{ last.text.title }}</b>
     <span v-if="last" class="muted small meta">

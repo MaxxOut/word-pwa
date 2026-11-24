@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { readingRepo } from './repo.js'
 import { textsOf } from './content/index.js'
 import { saved, loadSaved } from './texts.js'
-import { LEVELS, readStatus } from './domain.js'
+import { LEVELS } from './domain.js'
 import { useLibraryStore } from '@/core/library/store.js'
 import AppTopBar from '@/core/shell/AppTopBar.vue'
 import AppIcon from '@/shared/components/AppIcon.vue'
@@ -18,12 +18,11 @@ const props = defineProps({
 const { t }   = useI18n()
 const library = useLibraryStore()
 
-const progress = ref(new Map()) // text_id → запись о чтении
+const progress = ref(new Map()) // text_id → { stage, percent }
 
 async function loadProgress() {
   if (!library.current) return
-  const list = await readingRepo.all(library.current.id)
-  progress.value = new Map(list.map(p => [p.text_id, p]))
+  progress.value = await readingRepo.stages(library.current.id)
 }
 watch(() => library.current?.id, loadProgress, { immediate: true })
 loadSaved()
@@ -58,7 +57,7 @@ function toggleLevel(level) {
 
 function statusOf(text) {
   const p = progress.value.get(text.id)
-  return { kind: readStatus(p), percent: p?.percent ?? 0 }
+  return { kind: p?.stage ?? 'new', percent: p?.percent ?? 0 }
 }
 
 // уровень A — зелёный, B — акцент, C — нейтральный
@@ -211,5 +210,6 @@ const levelClass = level => `level--${level[0].toLowerCase()}`
 }
 .status--new      { background: var(--primary-c); color: var(--on-primary-c); }
 .status--reading  { background: var(--container-hi); color: var(--on); }
-.status--finished { background: var(--success-c); color: var(--on-success-c); }
+.status--read, .status--learned { background: var(--teal-c); color: var(--on-teal-c); }
+.status--done { background: var(--success-c); color: var(--on-success-c); }
 </style>

@@ -8,11 +8,16 @@ import StageHeader from './StageHeader.vue'
 import StageCard from './StageCard.vue'
 import { useStageQueue } from './useStageQueue.js'
 import { useAutoSpeak } from './autoSpeak.js'
+import { speak } from '@/shared/utils/browser.js'
+import { useLibraryStore } from '@/core/library/store.js'
 
+// ввод слова по переводу; mode 'listen' — «На слух»: слово звучит, перевода нет до ответа.
+// Транскрипция — только после ответа, иначе подсказывает написание
 const props = defineProps({
   words:    { type: Array,  required: true },
   allWords: { type: Array,  required: true },
   title:    { type: String, default: '' },
+  mode:     { type: String, default: null }, // null | listen
 })
 
 const emit = defineEmits(['done', 'exit'])
@@ -64,8 +69,17 @@ function resetState() {
 
 nextTick(() => inputRef.value?.focus())
 
+const listen  = computed(() => props.mode === 'listen')
+const library = useLibraryStore()
 const { say } = useAutoSpeak()
-watch(checked, done => done && say(correctAnswer.value))
+
+// на слух озвучка нужна всегда, без оглядки на автоозвучку
+const play = () => speak(current.value.word, library.current?.lang_code)
+if (listen.value) watch(index, play, { immediate: true })
+else watch(checked, done => done && say(correctAnswer.value))
+
+// «На слух» можно пропустить целиком (учу ночью, в тишине) — без ошибок
+const skipStage = () => emit('done', [])
 </script>
 
 <template>
@@ -78,10 +92,21 @@ watch(checked, done => done && say(correctAnswer.value))
   />
 
   <StageCard :key="index" :had-errors="current.has_error">
-    <div class="muted small">{{ t('study.stages.enterWord') }}</div>
-    <div class="prompt">{{ prompt }}</div>
-    <div v-if="current.transcription" class="muted">[{{ current.transcription }}]</div>
+    <template v-if="listen">
+      <div class="muted small">{{ t('study.stages.listenWord') }}</div>
+      <UiButton variant="tonal" icon="speak" class="play" @click="play">{{ t('study.stages.listenAgain') }}</UiButton>
+      <div v-if="checked" class="muted">{{ prompt }}</div>
+    </template>
+    <template v-else>
+      <div class="muted small">{{ t('study.stages.enterWord') }}</div>
+      <div class="prompt">{{ prompt }}</div>
+    </template>
+    <div v-if="checked && current.transcription" class="muted">[{{ current.transcription }}]</div>
   </StageCard>
+
+  <div v-if="listen" class="skip">
+    <UiButton variant="text" icon="skip" @click="skipStage">{{ t('study.stages.skipStage') }}</UiButton>
+  </div>
 
   <UiInput
       ref="inputRef"
@@ -116,6 +141,9 @@ watch(checked, done => done && say(correctAnswer.value))
 </template>
 
 <style scoped>
+.play { margin: 0.25rem 0; }
+.skip { display: flex; justify-content: flex-end; margin: -0.5rem 0 0.5rem; }
+
 .prompt {
   font-family: var(--font-title);
   font-size: 1.75rem;

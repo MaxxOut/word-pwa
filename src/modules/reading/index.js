@@ -11,6 +11,8 @@ import cloudOff from '@material-symbols/svg-400/rounded/cloud_off.svg?raw'
 import cloudDownload from '@material-symbols/svg-400/rounded/cloud_download.svg?raw'
 import refresh from '@material-symbols/svg-400/rounded/refresh.svg?raw'
 import deleteSweep from '@material-symbols/svg-400/rounded/delete_sweep.svg?raw'
+import doneAll from '@material-symbols/svg-400/rounded/done_all.svg?raw'
+import textWords from '@material-symbols/svg-400/rounded/school.svg?raw'
 import ReadingView from './ReadingView.vue'
 import TopicView from './TopicView.vue'
 import ReaderView from './ReaderView.vue'
@@ -33,5 +35,6 @@ export default {
     reading: readingIcon, 'reading-fill': readingFill,
     castle, science, coffee, code, toc,
     book, 'cloud-off': cloudOff, 'cloud-download': cloudDownload, refresh, 'delete-sweep': deleteSweep,
+    'done-all': doneAll, 'text-words': textWords,
   },
 }

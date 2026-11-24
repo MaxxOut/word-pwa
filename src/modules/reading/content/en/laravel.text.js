@@ -3,6 +3,7 @@ export default {
   topic:  'tech',
   level:  'B2',
   added:  '2026-11-15',
+  review: '2028-11',
   title:  'Laravel: A Framework for Web Artisans',
   source: null,
   chapters: [

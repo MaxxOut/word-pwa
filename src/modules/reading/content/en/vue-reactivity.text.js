@@ -3,6 +3,7 @@ export default {
   topic:  'tech',
   level:  'C1',
   added:  '2026-11-08',
+  review: '2028-11',
   title:  'Vue: Reactivity in Depth',
   source: 'Документация Vue.js, «Reactivity in Depth» (vuejs.org), CC BY 4.0, © Evan You и авторы документации; без примеров кода, адаптировано',
   chapters: [

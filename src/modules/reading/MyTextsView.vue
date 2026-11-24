@@ -4,7 +4,6 @@ import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { readingRepo } from './repo.js'
 import { userTextsOf, removeUserText } from './texts.js'
-import { readStatus } from './domain.js'
 import { useLibraryStore } from '@/core/library/store.js'
 import { confirm, toast } from '@/shared/ui/feedback.js'
 import AppTopBar from '@/core/shell/AppTopBar.vue'
@@ -35,9 +34,9 @@ const howTo    = ref(false) // подсказка «Как добавить кн
 async function load() {
   if (!library.current) return
   const id = library.current.id
-  const [list, read] = await Promise.all([userTextsOf(id), readingRepo.all(id)])
+  const [list, stages] = await Promise.all([userTextsOf(id), readingRepo.stages(id)])
   texts.value    = list
-  progress.value = new Map(read.map(p => [p.text_id, p]))
+  progress.value = stages
 }
 watch(() => library.current?.id, load, { immediate: true })
 
@@ -56,7 +55,7 @@ onMounted(() => {
 
 function statusOf(text) {
   const p = progress.value.get(text.id)
-  return { kind: readStatus(p), percent: p?.percent ?? 0 }
+  return { kind: p?.stage ?? 'new', percent: p?.percent ?? 0 }
 }
 
 async function remove(text) {
@@ -174,7 +173,8 @@ async function remove(text) {
   background: var(--surface);
   color: var(--on);
 }
-.status--finished { background: var(--success-c); color: var(--on-success-c); }
+.status--read, .status--learned { background: var(--teal-c); color: var(--on-teal-c); }
+.status--done { background: var(--success-c); color: var(--on-success-c); }
 
 .how {
   display: grid;

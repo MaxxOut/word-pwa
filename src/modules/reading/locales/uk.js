@@ -6,7 +6,21 @@ export default {
   status: {
     new:      'Новий',
     reading:  '{n}%',
-    finished: 'Прочитано',
+    read:     'Прочитано',
+    learned:  'Слова вивчено',
+    done:     'Завершено',
+  },
+  stage: {
+    reading:        'Читається',
+    read:           'Прочитано',
+    learned:        'Прочитано, слова вивчено',
+    done:           'Завершено',
+    words:          'Слів тексту вивчено: {n} з {total}',
+    markRead:       'Прочитано',
+    study:          'Вчити слова тексту ({n})',
+    markDone:       'Завершено',
+    next:           'Далі можна почитати:',
+    nothingToStudy: 'Невивчених слів із перекладом у цьому тексті немає',
   },
   sorts: {
     levelAsc:  'Легкі',

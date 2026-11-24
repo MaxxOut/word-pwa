@@ -3,6 +3,7 @@ export default {
   topic:  'tech',
   level:  'B2',
   added:  '2026-11-17',
+  review: '2027-11',
   title:  'Teaching Claude New Tricks: Agent Skills',
   source: null,
   chapters: [

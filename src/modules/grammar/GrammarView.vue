@@ -6,6 +6,7 @@ import { tensesOf } from './tenses/index.js'
 import { useLibraryStore } from '@/core/library/store.js'
 import AppTopBar from '@/core/shell/AppTopBar.vue'
 import AppIcon from '@/shared/components/AppIcon.vue'
+import GrammarTile from './GrammarTile.vue'
 
 // корень «Грамматики»: справочники и (потом) правила — плитками, как темы «Чтения»
 const { t }   = useI18n()
@@ -20,6 +21,8 @@ const tensesReady = computed(() => tenses.value.filter(x => x.active).length)
 
 <template>
   <AppTopBar :title="t('grammar.title')" :library="false" />
+
+  <GrammarTile class="continue" />
 
   <div class="sections">
     <RouterLink v-if="tensesReady" v-ripple class="section" :to="{ name: 'grammar-tenses' }">
@@ -56,6 +59,8 @@ const tensesReady = computed(() => tenses.value.filter(x => x.active).length)
 </template>
 
 <style scoped>
+.continue { margin-bottom: 0.5rem; }
+
 .sections {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));

@@ -7,6 +7,7 @@ import AppTopBar from '@/core/shell/AppTopBar.vue'
 import AppIcon from '@/shared/components/AppIcon.vue'
 import UiEmpty from '@/shared/ui/UiEmpty.vue'
 import TextsMenu from './TextsMenu.vue'
+import ContinueReading from './ContinueReading.vue'
 import { userTextsOf } from './texts.js'
 
 // корень «Чтения»: темы текущей библиотеки и внешние книги (свои тексты — третьим цветом)
@@ -30,6 +31,8 @@ const topics = computed(() => {
   <AppTopBar :title="t('reading.title')" :library="false">
     <TextsMenu v-if="topics.length" />
   </AppTopBar>
+
+  <ContinueReading in-section class="continue" />
 
   <div class="topics">
     <RouterLink
@@ -57,6 +60,8 @@ const topics = computed(() => {
 </template>
 
 <style scoped>
+.continue { margin-bottom: 0.5rem; }
+
 .topics {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));

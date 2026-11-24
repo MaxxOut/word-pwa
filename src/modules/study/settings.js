@@ -3,6 +3,7 @@ export const defaults = {
   learning: {
     words_per_session: 4,
     extra_letters:     0,
+    choices:           4, // вариантов в выборе перевода (и в повторении)
   },
   repeat: {
     words_per_session:   10,
@@ -11,10 +12,13 @@ export const defaults = {
     days_known:          20, // слова «Знаю»
   },
   stages: {
+    intro:       true,
     direct:      true,
     reverse:     true,
     constructor: true,
+    context:     true,
     input:       true,
+    listen:      true,
   },
   // озвучка слова в изучении и повторении: перевод с изучаемого языка — сразу, остальное — после ответа
   speech: {

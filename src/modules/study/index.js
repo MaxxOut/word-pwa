@@ -2,6 +2,8 @@
 import studyIcon from '@material-symbols/svg-400/rounded/school.svg?raw'
 import studyFill from '@material-symbols/svg-400/rounded/school-fill.svg?raw'
 import repeatIcon from '@material-symbols/svg-400/rounded/replay.svg?raw'
+import replaceIcon from '@material-symbols/svg-400/rounded/sync.svg?raw'
+import skipIcon from '@material-symbols/svg-400/rounded/skip_next.svg?raw'
 import StudyView from './StudyView.vue'
 import RepeatView from './RepeatView.vue'
 import LearnTile from './home/LearnTile.vue'
@@ -26,5 +28,5 @@ export default {
     { tab: 'study', component: LearningSettings, order: 10 },
     { tab: 'study', component: RepeatSettings,   order: 20 },
   ],
-  icons: { study: studyIcon, 'study-fill': studyFill, repeat: repeatIcon },
+  icons: { study: studyIcon, 'study-fill': studyFill, repeat: repeatIcon, replace: replaceIcon, skip: skipIcon },
 }

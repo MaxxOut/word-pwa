@@ -5,7 +5,7 @@ import { SUBJECTS, VERBS, MARKERS } from './en.js'
 
 const pick = (list, rnd) => list[Math.floor(rnd() * list.length)]
 
-function shuffle(list, rnd) {
+export function shuffle(list, rnd) {
   const a = [...list]
   for (let i = a.length - 1; i > 0; i--) {
     const j = Math.floor(rnd() * (i + 1));
@@ -117,7 +117,7 @@ export function answerFor(tense, kind, verb, p) {
 
 // неверные варианты, по порядку важности: то же время с чужим лицом (go / goes — проверяет лицо),
 // другие времена с тем же лицом (сначала — времена этой тренировки), типичные ошибки
-function wrongFor(tense, kind, verb, p, related, rnd) {
+export function wrongFor(tense, kind, verb, p, related, rnd) {
   const other  = p === '3s' ? 'pl' : '3s'
   const skip   = [tense, ...(kind === 'question' ? [] : ALSO_RIGHT[tense] ?? [])]
   const tenses = [
@@ -139,7 +139,7 @@ function wrongFor(tense, kind, verb, p, related, rnd) {
   return list.filter(x => !right.includes(x))
 }
 
-function options(answer, wrong, rnd) {
+export function options(answer, wrong, rnd) {
   const pool = [...new Set(wrong.filter(w => w !== answer))]
   // первые — самые «похожие» (другие времена, чужое лицо); добираем из остальных
   const chosen = [...pool.slice(0, 2), ...shuffle(pool.slice(2), rnd)].slice(0, 3)

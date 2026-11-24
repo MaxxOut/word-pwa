@@ -3,10 +3,11 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter, onBeforeRouteLeave } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { findTense, tensesOf } from './tenses/index.js'
-import { makeSession } from './tenses/generate.js'
+import { makeLevelSession, levelFor, isRight, countFor } from './tenses/levels.js'
 import { percentOf, trend } from './tenses/result.js'
 import { grammarRepo } from './repo.js'
 import { useLibraryStore } from '@/core/library/store.js'
+import { useSettingsStore } from '@/core/settings/store.js'
 import { speak, canSpeak } from '@/shared/utils/browser.js'
 import { confirm } from '@/shared/ui/feedback.js'
 import { goBack } from '@/shared/utils/navigation.js'
@@ -16,18 +17,22 @@ import UiIconButton from '@/shared/ui/UiIconButton.vue'
 import UiProgress from '@/shared/ui/UiProgress.vue'
 import UiSpinner from '@/shared/ui/UiSpinner.vue'
 
-// тренировка времени: 10 предложений «выбери форму». Верно — дальше само; неверно — правильный
-// вариант и «Дальше». Итог: процент верных и сравнение с прошлой тренировкой; «Ещё 10» — новая.
-// id = 'mixed' — смешанная: до 3 потренированных времён (давно не тренированные первыми), по 5 заданий
-// на каждое, вперемешку; время угадывается по маркеру.
+// тренировка времени: 10 предложений «выбери форму» (уровень 3 — 6 предложений с несколькими
+// пропусками, по очереди). Верно — дальше само; неверно — правильный вариант и «Дальше».
+// Задание засчитано, если все его пропуски верны с первого раза.
+// Уровень — из настроек (выбирается на экране времени): 1 — генератор с маркером, 2 — фразы по смыслу,
+// 3 — несколько времён в одном предложении. Итог: процент верных и сравнение с прошлой тренировкой.
+// id = 'mixed' — смешанная: до 3 потренированных времён (давно не тренированные первыми), поровну
+// на каждое, вперемешку.
 // Её итог — отдельной строкой (_mixed), а каждому времени из неё — свой процент (это тоже повторение)
 const props = defineProps({
   id: { type: String, required: true },
 })
 
 const router        = useRouter()
-const { t }         = useI18n()
+const { t, locale } = useI18n()
 const library       = useLibraryStore()
+const settings      = useSettingsStore()
 
 const libraryId = library.current?.id
 const mixed     = props.id === 'mixed'
@@ -35,20 +40,24 @@ const tense     = mixed ? { name: t('grammar.mixed.title'), active: true } : fin
 
 const items    = ref([])
 const index    = ref(0)
-const chosen   = ref(null)   // выбранный вариант текущего задания
+const gapIndex = ref(0)      // текущий пропуск задания
+const picks    = ref([])     // выбранные варианты по пропускам текущего задания
 const correct  = ref(0)
-const mistakes = ref([])     // { item, chosen } — в итоге: ваш вариант и правильный
+const mistakes = ref([])     // { item, picks } — в итоге: ваши варианты и правильные
 const result   = ref(null)   // { percent, prev, trend }
 
 const item     = computed(() => items.value[index.value])
+const gap      = computed(() => item.value.gaps[gapIndex.value])
+const chosen   = computed(() => picks.value[gapIndex.value] ?? null)
 const answered = computed(() => chosen.value !== null)
+const itemDone = computed(() => answered.value && gapIndex.value === item.value.gaps.length - 1)
 const isLast   = computed(() => index.value === items.value.length - 1)
-const progress = computed(() => (items.value.length ? ((index.value + (answered.value ? 1 : 0)) / items.value.length) * 100 : 0))
+const progress = computed(() => (items.value.length ? ((index.value + (itemDone.value ? 1 : 0)) / items.value.length) * 100 : 0))
 
 if (!tense?.active) router.replace({ name: 'grammar-tenses' })
 
 const MIXED_TENSES = 3
-const PER_TENSE    = 5
+const PER_TENSE    = { 1: 5, 2: 5, 3: 3 }
 
 // смешанная — по потренированным временам; меньше двух — смешивать нечего
 async function topics() {
@@ -65,10 +74,12 @@ async function start() {
   const recent = await grammarRepo.recentVerbs(libraryId).catch(() => ({}))
   const tenses = await topics()
   if (mixed && tenses.length < 2) return router.replace({ name: 'grammar-tenses' })
-  const count  = mixed ? tenses.length * PER_TENSE : 10
-  items.value    = makeSession(tenses, { recent, count, irregular: Math.round(count / 5) })
+  const level  = levelFor(tenses, settings.settings.grammar?.level ?? 1)
+  const count  = mixed ? tenses.length * PER_TENSE[level] : countFor(level)
+  items.value    = makeLevelSession(tenses, level, { recent, count, irregular: Math.round(count / 5) })
   index.value    = 0
-  chosen.value   = null
+  gapIndex.value = 0
+  picks.value    = []
   correct.value  = 0
   mistakes.value = []
   result.value   = null
@@ -76,19 +87,28 @@ async function start() {
 
 onMounted(() => tense?.active && start())
 
-// после ответа — правильная форма в пропуске
-const gapText = computed(() => (answered.value ? item.value.answer : '…'))
+// пропуск: отвеченный — правильная форма (зелёным / красным), текущий — «…», следующие — подсказка-глагол
+function gapState(i) {
+  const g = item.value.gaps[i]
+  if (i < gapIndex.value || (i === gapIndex.value && answered.value)) {
+    return { text: g.answer, cls: picks.value[i] === g.answer ? 'gap--ok' : 'gap--fix' }
+  }
+  return { text: g.hint ? `… (${g.hint})` : '…', cls: i === gapIndex.value ? 'gap--now' : 'gap--later' }
+}
 
-// маркер времени в хвосте — выделяем: он подсказывает время
-const afterParts = computed(() => {
-  const { after, marker } = item.value
-  const i = after.lastIndexOf(marker)
-  return i === -1 ? [after, '', ''] : [after.slice(0, i), marker, after.slice(i + marker.length)]
-})
+// маркер времени (уровень 1) — выделяем: он подсказывает время. Кусок текста → [до, маркер, после]
+function markerParts(text) {
+  const marker = item.value.marker
+  const i = marker ? text.lastIndexOf(marker) : -1
+  return i === -1 ? [text, '', ''] : [text.slice(0, i), marker, text.slice(i + marker.length)]
+}
+
+// перевод фразы (уровни 2–3) — после ответа на последний пропуск
+const translation = computed(() => (itemDone.value ? item.value[locale.value === 'uk' ? 'uk' : 'ru'] ?? '' : ''))
 
 function optionState(option) {
   if (!answered.value) return null
-  if (option === item.value.answer) return 'correct'
+  if (option === gap.value.answer) return 'correct'
   if (option === chosen.value) return 'wrong'
   return 'dim'
 }
@@ -97,20 +117,23 @@ let timer = null
 
 function choose(option) {
   if (answered.value) return
-  chosen.value = option
-  if (option === item.value.answer) {
-    correct.value++
-    timer = setTimeout(next, 900)
-  } else {
-    mistakes.value.push({ item: item.value, chosen: option })
-  }
+  picks.value[gapIndex.value] = option
+  if (option === gap.value.answer) timer = setTimeout(next, 900)
 }
 
+// следующий пропуск; пропуски кончились — итог задания и следующее задание
 function next() {
   clearTimeout(timer)
+  if (!itemDone.value) {
+    gapIndex.value++
+    return
+  }
+  if (isRight(item.value, picks.value)) correct.value++
+  else mistakes.value.push({ item: item.value, picks: [...picks.value] })
   if (isLast.value) return finish()
   index.value++
-  chosen.value = null
+  gapIndex.value = 0
+  picks.value    = []
 }
 
 // «Итог» нажали дважды — сохраняем один раз
@@ -142,7 +165,7 @@ function exit() {
 // ушли посреди тренировки — спросить (результат не сохранится). Автопереход после верного ответа
 // гасим, только если ушли: «Остаться» — он должен сработать, иначе экран застрянет без кнопки «Дальше»
 onBeforeRouteLeave(async () => {
-  if (result.value || index.value === 0 && !answered.value) {
+  if (result.value || index.value === 0 && gapIndex.value === 0 && !answered.value) {
     clearTimeout(timer)
     return true
   }
@@ -184,11 +207,11 @@ onBeforeRouteLeave(async () => {
         <div v-for="(m, i) in mistakes" :key="i" class="mistake">
           <div class="mistake-row">
             <span class="mistake-label">{{ t('grammar.train.yours') }}</span>
-            <span lang="en"><template v-if="m.item.before">{{ m.item.before }} </template><b class="pick pick--wrong">{{ m.chosen }}</b> {{ m.item.after }}</span>
+            <span lang="en"><template v-for="(s, k) in m.item.texts" :key="k">{{ s }}<b v-if="k < m.item.gaps.length" class="pick" :class="m.picks[k] === m.item.gaps[k].answer ? 'pick--same' : 'pick--wrong'">{{ m.picks[k] }}</b></template></span>
           </div>
           <div class="mistake-row">
             <span class="mistake-label">{{ t('grammar.train.right') }}</span>
-            <span class="grow" lang="en"><template v-if="m.item.before">{{ m.item.before }} </template><b class="pick pick--right">{{ m.item.answer }}</b> {{ m.item.after }}</span>
+            <span class="grow" lang="en"><template v-for="(s, k) in m.item.texts" :key="k">{{ s }}<b v-if="k < m.item.gaps.length" class="pick pick--right">{{ m.item.gaps[k].answer }}</b></template></span>
             <UiIconButton v-if="canSpeak()" class="mistake-say" icon="speak" :label="t('grammar.speak')" @click="speak(m.item.sentence, 'en')" />
           </div>
         </div>
@@ -203,20 +226,22 @@ onBeforeRouteLeave(async () => {
     <!-- задание -->
     <template v-else>
       <section :key="index" class="card" lang="en">
+        <p v-if="item.ctx" class="ctx">{{ item.ctx }}</p>
         <p class="sentence">
-          <template v-if="item.before">{{ item.before }} </template>
-          <span class="gap" :class="answered && (chosen === item.answer ? 'gap--ok' : 'gap--fix')">{{ gapText }}</span>
-          {{ ' ' }}{{ afterParts[0] }}<b class="marker">{{ afterParts[1] }}</b>{{ afterParts[2] }}
+          <template v-for="(s, i) in item.texts" :key="i">
+            <template v-for="(part, j) in markerParts(s)" :key="j"><b v-if="j === 1" class="marker">{{ part }}</b><template v-else>{{ part }}</template></template>
+            <span v-if="i < item.gaps.length" class="gap" :class="gapState(i).cls">{{ gapState(i).text }}</span>
+          </template>
         </p>
         <div class="card-foot">
-          <span class="grow" />
-          <UiIconButton v-if="answered && canSpeak()" icon="speak" :label="t('grammar.speak')" @click="speak(item.sentence, 'en')" />
+          <span class="grow muted translation" :lang="locale">{{ translation }}</span>
+          <UiIconButton v-if="itemDone && canSpeak()" icon="speak" :label="t('grammar.speak')" @click="speak(item.sentence, 'en')" />
         </div>
       </section>
 
-      <div :key="`o${index}`" class="options" lang="en">
+      <div :key="`o${index}-${gapIndex}`" class="options" lang="en">
         <button
-            v-for="option in item.options"
+            v-for="option in gap.options"
             :key="option"
             v-ripple
             type="button"
@@ -231,9 +256,9 @@ onBeforeRouteLeave(async () => {
         </button>
       </div>
 
-      <div v-if="answered && chosen !== item.answer" class="stage-footer">
+      <div v-if="answered && chosen !== gap.answer" class="stage-footer">
         <UiButton variant="filled" @click="next">
-          {{ isLast ? t('grammar.train.finish') : t('grammar.train.next') }}
+          {{ isLast && itemDone ? t('grammar.train.finish') : t('grammar.train.next') }}
         </UiButton>
       </div>
     </template>
@@ -286,6 +311,11 @@ onBeforeRouteLeave(async () => {
   box-shadow: var(--shadow-card);
   animation: rise-in 0.3s ease-out;
 }
+.ctx {
+  font-size: 1.0625rem;
+  font-style: italic;
+  color: var(--muted);
+}
 .sentence {
   font-size: 1.375rem;
   line-height: 1.5;
@@ -299,8 +329,12 @@ onBeforeRouteLeave(async () => {
   text-align: center;
 }
 .gap--ok  { border-color: var(--success); color: var(--success); }
+.gap--now   { color: var(--muted); font-weight: 400; }
+.gap--later { border-color: var(--outline); color: var(--muted); font-weight: 400; }
 .gap--fix { border-color: var(--error); color: var(--error); }
 .marker { color: var(--primary); }
+
+.translation { font-size: 0.9375rem; line-height: 1.4; }
 
 .card-foot {
   display: flex;
@@ -387,5 +421,6 @@ onBeforeRouteLeave(async () => {
   border-radius: 0.25rem;
 }
 .pick--wrong { background: var(--error-c); color: var(--on-error-c); text-decoration: line-through; }
+.pick--same  { background: var(--surface); }
 .pick--right { background: var(--success-c); color: var(--on-success-c); }
 </style>

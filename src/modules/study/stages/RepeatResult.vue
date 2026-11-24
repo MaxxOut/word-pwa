@@ -18,11 +18,8 @@ const emit = defineEmits(['set', 'complete', 'exit'])
 
 const { t } = useI18n()
 
-// «Знаю» — только у слов «Знаю»
-const options = w => [
-  ...(w.is_ignored ? [OUTCOME.KNOWN] : []),
-  OUTCOME.OK, OUTCOME.SOON, OUTCOME.NEW,
-]
+// «Знаю» — у всех: хорошо выученное слово уходит в «Знаю» и повторяется редко (repeat.days_known)
+const options = () => [OUTCOME.KNOWN, OUTCOME.OK, OUTCOME.SOON, OUTCOME.NEW]
 
 const remembered = computed(() =>
   props.words.filter(w => [OUTCOME.OK, OUTCOME.KNOWN].includes(props.outcomes[w.id])).length,

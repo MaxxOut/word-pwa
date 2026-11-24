@@ -23,9 +23,11 @@ async function addToSession(libraryId, field, count) {
 }
 
 export const studyRepo = {
-  async start(libraryId) {
+  // ids — учить только из этих слов (например, слова текста из «Чтения»)
+  async start(libraryId, ids = null) {
     const all      = await wordsOf(libraryId)
-    const newWords = pickForStudy(all)
+    const only     = ids && new Set(ids.map(String))
+    const newWords = only ? pickForStudy(all.filter(w => only.has(String(w.id))), Infinity) : pickForStudy(all)
     return { newWords, extraWords: pickExtra(all) }
   },
 
@@ -64,9 +66,9 @@ export const repeatRepo = {
     const ids  = kind => Object.keys(outcomes).filter(id => outcomes[id] === kind)
 
     await db.transaction('rw', db.words, db.sessions, async () => {
-      // «Знаю» остаётся «Знаю»
+      // «Знаю»: остаётся или становится «Знаю» — повторяется раз в repeat.days_known дней
       await db.words.where('id').anyOf(ids(OUTCOME.KNOWN)).modify({
-        repeated_at: now, repeat_soon_at: null, updated_at: now,
+        is_ignored: true, repeated_at: now, repeat_soon_at: null, updated_at: now,
       })
       // помню — обычный график; «Знаю» с ошибкой становится обычным выученным
       await db.words.where('id').anyOf(ids(OUTCOME.OK)).modify(w => {
