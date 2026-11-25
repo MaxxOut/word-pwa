@@ -31,4 +31,15 @@ describe('useStageQueue', () => {
     expect(q.next()).toBe(false)
     expect(result).toEqual(['a'])
   })
+
+  it('skip counts as an error, does not requeue and moves on', () => {
+    let result = null
+    const q = useStageQueue(words, ids => { result = ids })
+    expect(q.skip()).toBe(true)       // a — пропущено
+    expect(q.current.value.id).toBe('b')
+    q.succeed()
+    expect(q.next()).toBe(false)
+    expect(result).toEqual(['a'])
+    expect(q.progress.value).toBe(100)
+  })
 })

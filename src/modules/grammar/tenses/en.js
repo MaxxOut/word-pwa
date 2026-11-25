@@ -10,9 +10,9 @@ export const TENSES = [
   { id: 'future-simple',              group: 'simple',             name: 'Future Simple',              active: true },
   { id: 'present-continuous',         group: 'continuous',         name: 'Present Continuous',         active: true },
   { id: 'past-continuous',            group: 'continuous',         name: 'Past Continuous',            active: true },
-  { id: 'future-continuous',          group: 'continuous',         name: 'Future Continuous' },
+  { id: 'future-continuous',          group: 'continuous',         name: 'Future Continuous',          active: true },
   { id: 'present-perfect',            group: 'perfect',            name: 'Present Perfect',            active: true },
-  { id: 'past-perfect',               group: 'perfect',            name: 'Past Perfect' },
+  { id: 'past-perfect',               group: 'perfect',            name: 'Past Perfect',               active: true },
   { id: 'future-perfect',             group: 'perfect',            name: 'Future Perfect' },
   { id: 'present-perfect-continuous', group: 'perfect-continuous', name: 'Present Perfect Continuous' },
   { id: 'past-perfect-continuous',    group: 'perfect-continuous', name: 'Past Perfect Continuous' },
@@ -69,4 +69,6 @@ export const MARKERS = {
   'future-simple':      ['tomorrow', 'next week', 'next year', 'next Monday', 'soon'],
   'past-continuous':    ['at 8 pm yesterday', 'at that moment', 'at this time yesterday', 'when the phone rang', 'all evening yesterday'],
   'present-perfect':    ['recently', 'lately', 'this week', 'this month', 'today'],
+  'future-continuous':  ['at 8 pm tomorrow', 'at this time tomorrow', 'all day tomorrow', 'at noon next Sunday', 'this time next week'],
+  'past-perfect':       ['before the guests arrived', 'by the time we came', 'by 6 pm yesterday', 'before the film started', 'before lunch yesterday'],
 }

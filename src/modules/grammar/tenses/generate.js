@@ -94,19 +94,35 @@ const FORMS = {
     question: p => cap(HAVE[p]),
     main:     pp,
   },
+  'future-continuous': {
+    affirm:   verb => `will be ${ing(verb)}`,
+    negative: verb => `won't be ${ing(verb)}`,
+    question: () => 'Will',
+    main:     verb => `be ${ing(verb)}`,
+  },
+  'past-perfect': {
+    affirm:   verb => `had ${pp(verb)}`,
+    negative: verb => `hadn't ${pp(verb)}`,
+    question: () => 'Had',
+    main:     pp,
+  },
 }
 
 export const GENERATED = Object.keys(FORMS)
 
 // с этим маркером форма другого времени тоже верна — её в неверные не берём:
 // «She is going there tomorrow», «I cooked dinner at 8 pm yesterday», «I watched TV this week»,
-// «I am playing football this week» / «I have played football this week»
+// «I am playing football this week» / «I have played football this week», «I will watch TV at 8 pm tomorrow»,
+// «She cooked dinner before the guests arrived», «I had eaten when the phone rang».
+// Фразы уровня 2 тоже на это опираются: «Before he retired, he ___ in a factory» — worked и had worked
 const ALSO_RIGHT = {
-  'present-continuous': ['future-simple', 'present-perfect'],
-  'future-simple':      ['present-continuous'],
-  'past-simple':        ['past-continuous'],
-  'past-continuous':    ['past-simple'],
+  'present-continuous': ['future-simple', 'present-perfect', 'future-continuous'],
+  'future-simple':      ['present-continuous', 'future-continuous'],
+  'past-simple':        ['past-continuous', 'past-perfect'],
+  'past-continuous':    ['past-simple', 'past-perfect'],
   'present-perfect':    ['past-simple', 'present-continuous'],
+  'future-continuous':  ['future-simple', 'present-continuous'],
+  'past-perfect':       ['past-simple', 'past-continuous'],
 }
 
 // ответ (то, что в пропуске) по времени, виду и лицу
@@ -126,7 +142,7 @@ export function wrongFor(tense, kind, verb, p, related, rnd) {
   ]
   const list = [answerFor(tense, kind, verb, other), ...tenses.map(x => answerFor(x, kind, verb, p))]
   if (kind === 'question') {
-    list.push('Do', 'Does', 'Did', 'Is', 'Are', 'Am', 'Was', 'Were', 'Will', 'Have', 'Has')
+    list.push('Do', 'Does', 'Did', 'Is', 'Are', 'Am', 'Was', 'Were', 'Will', 'Have', 'Has', 'Had')
   } else if (kind === 'affirm') {
     list.push(ing(verb), `${BE[p]} ${verb.v}`, `will ${third(verb.v)}`, `${HAVE[p]} ${verb.v}`, third(verb.v), verb.v)
     if (pp(verb) !== past(verb)) list.push(`${HAVE[p]} ${past(verb)}`)

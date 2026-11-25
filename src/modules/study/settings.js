@@ -16,9 +16,8 @@ export const defaults = {
     direct:      true,
     reverse:     true,
     constructor: true,
-    context:     true,
-    input:       true,
     listen:      true,
+    input:       true,
   },
   // озвучка слова в изучении и повторении: перевод с изучаемого языка — сразу, остальное — после ответа
   speech: {

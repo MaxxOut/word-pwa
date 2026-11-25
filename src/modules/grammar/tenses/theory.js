@@ -138,4 +138,50 @@ export const THEORY = {
       ['Have you ever swum in the sea?', 'Ты когда-нибудь плавал в море?', 'Ти колись плавав у морі?'],
     ],
   },
+
+  'future-continuous': {
+    meaning: { ru: 'Будет идти в определённый момент в будущем', uk: 'Триватиме в певний момент у майбутньому' },
+    uses: {
+      ru: ['Действие будет идти в момент в будущем: At 8 pm tomorrow I will be working.', 'Обычный ход событий, без особого намерения: I will be passing the shop anyway.', 'Вежливый вопрос о планах: Will you be using the car tonight?'],
+      uk: ['Дія триватиме в момент у майбутньому: At 8 pm tomorrow I will be working.', 'Звичайний перебіг подій, без особливого наміру: I will be passing the shop anyway.', 'Ввічливе питання про плани: Will you be using the car tonight?'],
+    },
+    form: [
+      ['+', 'I / you / he / she / we / they will be working', "short: I'll be working"],
+      ['−', "I won't be working", "she won't be going"],
+      ['?', 'Will you be working?', 'Will she be going?'],
+    ],
+    markers: ['at 8 pm tomorrow', 'at this time tomorrow', 'this time next week', 'all day tomorrow', 'when you arrive'],
+    notes: {
+      ru: ['will be + -ing — одно для всех лиц: she will be working (не will be works).', 'После when / if / before — настоящее время: When you arrive, I will be waiting.', 'Глаголы состояния (know, like, want) в Continuous не ставят: I will know (не will be knowing).'],
+      uk: ['will be + -ing — одне для всіх осіб: she will be working (не will be works).', 'Після when / if / before — теперішній час: When you arrive, I will be waiting.', 'Дієслова стану (know, like, want) у Continuous не ставлять: I will know (не will be knowing).'],
+    },
+    examples: [
+      ['At this time tomorrow I will be flying to Rome.', 'Завтра в это время я буду лететь в Рим.', 'Завтра в цей час я летітиму до Рима.'],
+      ["We won't be watching TV at 8 pm — we'll be at the gym.", 'В 8 вечера мы не будем смотреть телевизор — мы будем в спортзале.', 'О 8 вечора ми не дивитимемося телевізор — ми будемо в спортзалі.'],
+      ['Will you be working all day tomorrow?', 'Ты будешь работать завтра весь день?', 'Ти працюватимеш завтра весь день?'],
+    ],
+  },
+
+  'past-perfect': {
+    meaning: { ru: 'Случилось раньше другого момента в прошлом', uk: 'Сталося раніше за інший момент у минулому' },
+    uses: {
+      ru: ['Закончилось до другого действия в прошлом: When we arrived, the film had started.', 'Результат к моменту в прошлом: By 6 pm she had finished the report.', 'Причина того, что было в прошлом: He was tired because he had worked all day.'],
+      uk: ['Закінчилося до іншої дії в минулому: When we arrived, the film had started.', 'Результат на момент у минулому: By 6 pm she had finished the report.', 'Причина того, що було в минулому: He was tired because he had worked all day.'],
+    },
+    form: [
+      ['+', 'I / you / he / she / we / they had worked', 'irregular: had gone, had eaten…'],
+      ['−', "I hadn't worked", "she hadn't gone"],
+      ['?', 'Had you worked?', 'Had she gone?'],
+    ],
+    markers: ['before', 'by the time', 'already', 'just', 'never … before', 'after'],
+    notes: {
+      ru: ['had — одно для всех лиц, глагол — 3-я форма: she had gone (не had went).', 'Нужен момент в прошлом, до которого всё случилось: When I came, he had left. Нет его — Past Simple.', 'С before / after порядок и так понятен — подойдёт и Past Simple: After he left, I called.'],
+      uk: ['had — одне для всіх осіб, дієслово — 3-тя форма: she had gone (не had went).', 'Потрібен момент у минулому, до якого все сталося: When I came, he had left. Немає його — Past Simple.', 'З before / after порядок і так зрозумілий — підійде й Past Simple: After he left, I called.'],
+    },
+    examples: [
+      ['When we got to the cinema, the film had already started.', 'Когда мы пришли в кино, фильм уже начался.', 'Коли ми прийшли в кіно, фільм уже почався.'],
+      ["She hadn't eaten anything before the exam.", 'Перед экзаменом она ничего не ела.', 'Перед іспитом вона нічого не їла.'],
+      ['Had you met Tom before the party?', 'Ты был знаком с Томом до вечеринки?', 'Ти був знайомий з Томом до вечірки?'],
+    ],
+  },
 }

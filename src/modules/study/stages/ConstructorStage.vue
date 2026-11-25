@@ -19,7 +19,7 @@ const emit = defineEmits(['done', 'exit'])
 
 const { t } = useI18n()
 
-const { index, current, counter, progress, markError, fail, succeed, next: nextWord } =
+const { index, current, counter, progress, markError, fail, succeed, skip, next: nextWord } =
   useStageQueue(props.words, errorIds => emit('done', errorIds))
 
 const assembled       = ref('')
@@ -44,6 +44,8 @@ function initWord() {
   shuffledLetters.value = generateLetters(current.value.word)
 }
 
+// буква — по касанию, а не по click: палец чуть сдвинулся — телефон считает это жестом и click не приходит.
+// click без касания (detail 0) — с клавиатуры
 function pressLetter(letter) {
   if (letter.used || completed.value) return
 
@@ -84,6 +86,13 @@ function showHint() {
 const { say } = useAutoSpeak()
 watch(completed, done => done && say(current.value.word))
 
+let advance = 0
+
+function skipWord() {
+  clearTimeout(advance)
+  if (skip()) initWord()
+}
+
 function onWordComplete() {
   completed.value = true
 
@@ -91,7 +100,7 @@ function onWordComplete() {
   if (attemptFailed.value) fail()
   else succeed()
 
-  setTimeout(() => {
+  advance = setTimeout(() => {
     if (nextWord()) initWord()
   }, 1200)
 }
@@ -116,6 +125,10 @@ initWord()
     </div>
   </StageCard>
 
+  <div class="skip">
+    <UiButton variant="text" icon="skip" :disabled="completed" @click="skipWord">{{ t('study.stages.skipWord') }}</UiButton>
+  </div>
+
   <div class="letters">
     <button
         v-for="(letter, i) in shuffledLetters"
@@ -125,7 +138,8 @@ initWord()
         class="letter"
         :class="{ 'letter--used': letter.used, 'letter--wrong': letter.wrong }"
         :disabled="letter.used || completed"
-        @click="pressLetter(letter)"
+        @pointerdown="pressLetter(letter)"
+        @click="$event.detail === 0 && pressLetter(letter)"
     >
       <!-- все строчные: заглавная подсказала бы первую букву -->
       {{ letter.char.toLowerCase() }}
@@ -143,6 +157,8 @@ initWord()
 </template>
 
 <style scoped>
+.skip { display: flex; justify-content: flex-end; margin: -0.5rem 0 0.5rem; }
+
 .slots {
   display: flex;
   flex-wrap: wrap;
@@ -180,6 +196,7 @@ initWord()
   font-size: 1.25rem;
   font-weight: 700;
   user-select: none;
+  touch-action: manipulation;
   transition: opacity 0.2s, background-color 0.2s;
 }
 .letter--used { opacity: 0.2; }

@@ -24,7 +24,7 @@ const emit = defineEmits(['done', 'exit'])
 
 const { t } = useI18n()
 
-const { index, current, isLast, counter, progress, fail, succeed, next: nextWord } =
+const { index, current, isLast, counter, progress, fail, succeed, skip, next: nextWord } =
   useStageQueue(props.words, errorIds => emit('done', errorIds))
 
 const answer    = ref('')
@@ -53,6 +53,10 @@ function showHint() {
 
 function next() {
   if (nextWord()) resetState()
+}
+
+function skipWord() {
+  if (skip()) resetState()
 }
 
 function onEnter() {
@@ -104,8 +108,9 @@ const skipStage = () => emit('done', [])
     <div v-if="checked && current.transcription" class="muted">[{{ current.transcription }}]</div>
   </StageCard>
 
-  <div v-if="listen" class="skip">
-    <UiButton variant="text" icon="skip" @click="skipStage">{{ t('study.stages.skipStage') }}</UiButton>
+  <div class="skip">
+    <UiButton variant="text" icon="skip" :disabled="checked" @click="skipWord">{{ t('study.stages.skipWord') }}</UiButton>
+    <UiButton v-if="listen" variant="text" icon="skip" @click="skipStage">{{ t('study.stages.skipStage') }}</UiButton>
   </div>
 
   <UiInput
@@ -142,7 +147,7 @@ const skipStage = () => emit('done', [])
 
 <style scoped>
 .play { margin: 0.25rem 0; }
-.skip { display: flex; justify-content: flex-end; margin: -0.5rem 0 0.5rem; }
+.skip { display: flex; flex-wrap: wrap; justify-content: flex-end; margin: -0.5rem 0 0.5rem; }
 
 .prompt {
   font-family: var(--font-title);

@@ -173,8 +173,8 @@ async function remove(text) {
   background: var(--surface);
   color: var(--on);
 }
-.status--read, .status--learned { background: var(--teal-c); color: var(--on-teal-c); }
-.status--done { background: var(--success-c); color: var(--on-success-c); }
+.status--read    { background: var(--teal-c); color: var(--on-teal-c); }
+.status--learned { background: var(--success-c); color: var(--on-success-c); }
 
 .how {
   display: grid;

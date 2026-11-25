@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { pickSet, replaceInSet, addToSet, pickDistractors, contextOf } from './domain.js'
+import { pickSet, replaceInSet, addToSet, pickDistractors } from './domain.js'
 
 const pool = ['a', 'b', 'c', 'd'].map(id => ({ id }))
 
@@ -37,24 +37,5 @@ describe('варианты ответа', () => {
 
   it('похожей длины — раньше сильно отличающихся', () => {
     expect(pickDistractors('кот', [], [{ t: 'черепаха' }, { t: 'дом' }], 1, of, () => 0)).toEqual(['дом'])
-  })
-})
-
-describe('пример для «В контексте»', () => {
-  const w = (word, examples) => ({ word, examples })
-
-  it('находит форму слова целым словом, без учёта регистра', () => {
-    expect(contextOf(w('run', ['I run every day.']))).toEqual({ before: 'I ', match: 'run', after: ' every day.' })
-    expect(contextOf(w('the', ['The cat sleeps.'])).match).toBe('The')
-  })
-
-  it('часть другого слова и другая форма — не подходят', () => {
-    expect(contextOf(w('run', ['She runs fast.', 'A rerun.']))).toBeNull()
-    expect(contextOf(w('cat', []))).toBeNull()
-    expect(contextOf(w('cat', undefined))).toBeNull()
-  })
-
-  it('фраза из нескольких слов', () => {
-    expect(contextOf(w('give up', ['Never give up!'])).after).toBe('!')
   })
 })

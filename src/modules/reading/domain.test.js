@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { reactive } from 'vue'
-import { parseChapter, readPercent, textStage, wordsToStudy, nextText, matchWords, LEVELS, looksLikeBase } from './domain.js'
+import { parseChapter, readPercent, textStage, wordsToStudy, matchWords, LEVELS, looksLikeBase } from './domain.js'
 import { textsOf, findText, TOPICS } from './content/index.js'
 import { catalogEntry } from './content/catalog-entry.js'
 import CATALOG from './content/catalog.js'
@@ -21,16 +21,13 @@ describe('reading', () => {
   })
 
   it('стадия текста', () => {
-    const learned = { is_learned: true }
-    const fresh   = { is_learned: false }
     expect(textStage(null)).toBe('new')
     expect(textStage({ finished: false })).toBe('reading')
     expect(textStage({ finished: true })).toBe('read')
-    expect(textStage({ finished: true }, [])).toBe('read')
-    expect(textStage({ finished: true }, [learned, fresh])).toBe('read')
-    expect(textStage({ finished: true }, [learned, { is_ignored: true }])).toBe('learned')
-    expect(textStage({ finished: false }, [learned])).toBe('reading')
-    expect(textStage({ finished: true, done: true }, [fresh])).toBe('done')
+    expect(textStage({ finished: true, learned: true })).toBe('learned')
+    expect(textStage({ finished: false, learned: true })).toBe('learned')
+    expect(textStage({ finished: true, done: true })).toBe('learned') // старые записи
+    expect(textStage({ finished: true, done: true, learned: false })).toBe('read')
   })
 
   it('что учить из текста — невыученные с переводом', () => {
@@ -43,21 +40,6 @@ describe('reading', () => {
     expect(wordsToStudy(words).map(w => w.id)).toEqual([1])
   })
 
-  it('следующий текст — уровнем выше, не законченный; нет — того же уровня', () => {
-    const cur   = { id: 'a', topic: 'tech', level: 'B1' }
-    const texts = [
-      cur,
-      { id: 'b', topic: 'tech', level: 'B2', added: '2026-01-01' },
-      { id: 'c', topic: 'tech', level: 'B2', added: '2026-02-01' },
-      { id: 'd', topic: 'tales', level: 'B2', added: '2026-03-01' },
-      { id: 'e', topic: 'tech', level: 'B1', added: '2026-01-01' },
-    ]
-    const stages = { b: 'reading' }
-    expect(nextText(texts, cur, id => stages[id] ?? 'new').id).toBe('b')
-    expect(nextText(texts, cur, () => 'new').id).toBe('c')
-    expect(nextText(texts, cur, id => (id[0] === 'b' || id[0] === 'c' ? 'done' : 'new')).id).toBe('e')
-    expect(nextText(texts, cur, () => 'done')).toBe(null)
-  })
 
   it('слова словаря в тексте — целым словом, формой, фразой', () => {
     const text  = { chapters: [{ text: 'The Cat sat.' }, { text: 'Dogs give up easily.' }] }
@@ -212,7 +194,7 @@ describe('свои тексты', async () => {
 
     expect((await readingRepo.words(text)).map(w => w.id)).toEqual(['w1'])
     await readingRepo.save({ text_id: text.id, library_id: lib, chapter: 0, word: 3, percent: 100, finished: true })
-    expect((await readingRepo.stages(lib)).get(text.id).stage).toBe('learned')
+    expect((await readingRepo.stages(lib)).get(text.id).stage).toBe('read')
 
     await readingRepo.link(text.id, lib, 'w2') // dog в тексте нет — добавили из книги
     expect((await readingRepo.words(text)).map(w => w.id).sort()).toEqual(['w1', 'w2'])

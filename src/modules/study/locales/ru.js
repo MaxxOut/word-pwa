@@ -39,9 +39,8 @@ export default {
   },
   stages: {
     intro:            'Знакомство',
-    introHint:        'Пройдите слово по буквам — нажимайте или печатайте',
-    context:          'В контексте',
-    contextHint:      'Впишите слово в пример:',
+    introHint:        'Нажмите, чтобы дальше',
+    skipWord:         'Пропустить слово',
     listen:           'На слух',
     listenWord:       'Напишите, что услышали:',
     listenAgain:      'Ещё раз',

@@ -116,19 +116,3 @@ export function pickDistractors(correct, session, extra, count, answerOf, random
   }
   return out
 }
-
-// ----- этап «В контексте» -----
-const escape = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-
-// пример, где есть именно эта форма слова целым словом (без учёта регистра):
-// { before, match, after } или null
-export function contextOf(word) {
-  const re = new RegExp(`(^|[^\\p{L}\\p{N}'’-])(${escape(word.word.trim())})(?=$|[^\\p{L}\\p{N}'’-])`, 'iu')
-  for (const ex of word.examples ?? []) {
-    const m = re.exec(ex)
-    if (!m) continue
-    const start = m.index + m[1].length
-    return { before: ex.slice(0, start), match: m[2], after: ex.slice(start + m[2].length) }
-  }
-  return null
-}

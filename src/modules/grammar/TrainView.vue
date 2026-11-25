@@ -235,7 +235,6 @@ onBeforeRouteLeave(async () => {
         </p>
         <div class="card-foot">
           <span class="grow muted translation" :lang="locale">{{ translation }}</span>
-          <UiIconButton v-if="itemDone && canSpeak()" icon="speak" :label="t('grammar.speak')" @click="speak(item.sentence, 'en')" />
         </div>
       </section>
 

@@ -210,6 +210,6 @@ const levelClass = level => `level--${level[0].toLowerCase()}`
 }
 .status--new      { background: var(--primary-c); color: var(--on-primary-c); }
 .status--reading  { background: var(--container-hi); color: var(--on); }
-.status--read, .status--learned { background: var(--teal-c); color: var(--on-teal-c); }
-.status--done { background: var(--success-c); color: var(--on-success-c); }
+.status--read    { background: var(--teal-c); color: var(--on-teal-c); }
+.status--learned { background: var(--success-c); color: var(--on-success-c); }
 </style>

@@ -26,42 +26,23 @@ export function readPercent(text, chapter, word) {
 }
 
 // ----- стадии текста -----
-// new — не открывали, reading — читается, read — «Прочитано», learned — прочитан и все его слова
-// выучены (считается само), done — «Закончено». В записи о чтении: finished — прочитано, done — закончено
-export const STAGES = ['new', 'reading', 'read', 'learned', 'done']
+// два флага в записи о чтении, ставятся и снимаются в конце текста независимо:
+// finished — «Прочитан» (ставится сам, когда дочитал), learned — «Изучен» (done — так было раньше).
+// В списках: learned → read → reading (начат) → new (не открывали)
+export const STAGES = ['new', 'reading', 'read', 'learned']
 
-const isLearned = w => !!(w.is_learned || w.is_ignored)
-
-// слова текста выучены: есть хоть одно, и все выучены (или «Знаю»)
-export function wordsLearned(words) {
-  return words.length > 0 && words.every(isLearned)
-}
-
-// words — слова, связанные с текстом (уже найденные в словаре)
-export function textStage(progress, words = []) {
+export function textStage(progress) {
   if (!progress) return 'new'
-  if (progress.done) return 'done'
-  if (progress.finished) return wordsLearned(words) ? 'learned' : 'read'
+  if (progress.learned ?? progress.done) return 'learned'
+  if (progress.finished) return 'read'
   return 'reading'
 }
+
+const isLearned = w => !!(w.is_learned || w.is_ignored)
 
 // что учить из текста: невыученные с переводом
 export function wordsToStudy(words) {
   return words.filter(w => !isLearned(w) && (w.translation ?? []).some(x => x.trim()))
-}
-
-// следующий текст после законченного: той же темы, на уровень выше и не законченный;
-// такого нет — того же уровня. stageOf(id) → стадия. Сначала начатые, потом новые по дате
-export function nextText(texts, current, stageOf) {
-  const level = LEVELS.indexOf(current.level)
-  const open  = texts.filter(x => x.id !== current.id && x.topic === current.topic && stageOf(x.id) !== 'done')
-  const rank  = x => (stageOf(x.id) === 'reading' ? 0 : 1)
-  for (const l of [level + 1, level]) {
-    const list = open.filter(x => LEVELS.indexOf(x.level) === l)
-      .sort((a, b) => rank(a) - rank(b) || (b.added ?? '').localeCompare(a.added ?? ''))
-    if (list.length) return list[0]
-  }
-  return null
 }
 
 // слова словаря, что встречаются в тексте целым словом (или формой), без учёта регистра.

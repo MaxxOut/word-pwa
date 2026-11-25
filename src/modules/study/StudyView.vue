@@ -6,7 +6,7 @@ import { studyRepo } from './repo.js'
 import { useSettingsStore } from '@/core/settings/store.js'
 import { useLibraryStore } from '@/core/library/store.js'
 import { toast, confirm } from '@/shared/ui/feedback.js'
-import { activeStages, stageWords } from './stages.js'
+import { activeStages } from './stages.js'
 import StudySelect from './stages/StudySelect.vue'
 import StudyResult from './stages/StudyResult.vue'
 
@@ -31,7 +31,6 @@ const step       = ref('select') // select | stages | result
 const stageIndex = ref(0)
 
 const currentStage = computed(() => stages.value[stageIndex.value])
-const currentWords = computed(() => stageWords(currentStage.value, studyWords.value))
 const allWords     = computed(() => [...newWords.value, ...extraWords.value])
 
 // «Учить слова текста» и т.п.: ?ids=1,2,3 — учим только из этих слов
@@ -58,10 +57,8 @@ function onStart(selectedIds) {
   goToStage(0)
 }
 
-// этап без слов (нет примеров для «В контексте») пропускается
-function goToStage(from) {
-  const i = stages.value.findIndex((s, k) => k >= from && stageWords(s, studyWords.value).length)
-  if (i === -1) step.value = 'result'
+function goToStage(i) {
+  if (i >= stages.value.length) step.value = 'result'
   else {
     stageIndex.value = i
     step.value       = 'stages'
@@ -133,7 +130,7 @@ onMounted(fetchWords)
       :is="currentStage.component"
       v-else-if="step === 'stages'"
       :key="currentStage.key"
-      :words="currentWords"
+      :words="studyWords"
       :all-words="allWords"
       :mode="currentStage.mode"
       :title="t(currentStage.title)"

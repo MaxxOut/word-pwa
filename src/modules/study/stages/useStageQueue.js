@@ -27,6 +27,13 @@ export function useStageQueue(words, onDone) {
     doneCount.value++
   }
 
+  // «Пропустить слово»: это ошибка, но слово больше не повторяется; сразу следующее
+  function skip() {
+    markError()
+    doneCount.value++
+    return next()
+  }
+
   // false — очередь кончилась, этап завершён
   function next() {
     if (isLast.value) {
@@ -37,5 +44,5 @@ export function useStageQueue(words, onDone) {
     return true
   }
 
-  return { index, current, isLast, counter, progress, markError, fail, succeed, next }
+  return { index, current, isLast, counter, progress, markError, fail, succeed, skip, next }
 }

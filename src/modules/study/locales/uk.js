@@ -39,9 +39,8 @@ export default {
   },
   stages: {
     intro:            'Знайомство',
-    introHint:        'Пройдіть слово по літерах — натискайте або друкуйте',
-    context:          'У контексті',
-    contextHint:      'Впишіть слово в приклад:',
+    introHint:        'Натисніть, щоб далі',
+    skipWord:         'Пропустити слово',
     listen:           'На слух',
     listenWord:       'Напишіть, що почули:',
     listenAgain:      'Ще раз',
